@@ -1,0 +1,14 @@
+{
+  "name": "voice-clock",
+  "version": "1.0.0",
+  "description": "Voice Clock Web App",
+  "main": "index.js",
+  "scripts": {
+    "dev": "serve -p 3000 ."
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "serve": "^14.2.1"
+  }
+}
