@@ -1,9 +1,24 @@
+export const getSpeechSettings = () => {
+  return {
+    rate: parseFloat(localStorage.getItem('speechRate') || '1'),
+    pitch: parseFloat(localStorage.getItem('speechPitch') || '1')
+  };
+};
+
+export const setSpeechSettings = (rate, pitch) => {
+  localStorage.setItem('speechRate', rate);
+  localStorage.setItem('speechPitch', pitch);
+};
+
 export const speak = (text) => {
   const synth = window.speechSynthesis;
   if (synth.speaking) {
       synth.cancel();
   }
   const utterThis = new SpeechSynthesisUtterance(text);
+  const settings = getSpeechSettings();
+  utterThis.rate = settings.rate;
+  utterThis.pitch = settings.pitch;
   synth.speak(utterThis);
 };
 

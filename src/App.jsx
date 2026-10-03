@@ -3,15 +3,32 @@ import { Menu, Clock as ClockIcon, Hourglass, Timer as TimerIcon } from 'lucide-
 import ClockTab from './components/ClockTab';
 import TimerTab from './components/TimerTab';
 import StopwatchTab from './components/StopwatchTab';
+import Sidebar from './components/Sidebar';
+import SpeechSettingsModal from './components/SpeechSettingsModal';
 import './index.css';
 
 function App() {
   const [activeTab, setActiveTab] = useState('timer');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSpeechModalOpen, setIsSpeechModalOpen] = useState(false);
 
   return (
     <div className="app-container">
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        onOpenSpeechSettings={() => setIsSpeechModalOpen(true)}
+      />
+      
+      <SpeechSettingsModal 
+        isOpen={isSpeechModalOpen} 
+        onClose={() => setIsSpeechModalOpen(false)} 
+      />
+
       <header className="top-nav">
-        <button className="menu-btn"><Menu size={24} /></button>
+        <button className="menu-btn" onClick={() => setIsSidebarOpen(true)}>
+          <Menu size={24} />
+        </button>
         <div className="tabs">
           <button 
             className={`tab-btn ${activeTab === 'clock' ? 'active' : ''}`}
