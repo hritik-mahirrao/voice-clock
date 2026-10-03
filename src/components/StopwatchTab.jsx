@@ -18,12 +18,22 @@ export default function StopwatchTab() {
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
-  const [activeTemplateName, setActiveTemplateName] = useState("");
+  const [templates, setTemplates] = useState([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('voiceClock_stopwatchTemplates');
+    if (stored) setTemplates(JSON.parse(stored));
+  }, []);
 
   const currentSettings = {
     intervalSpeak,
     intervalVal
   };
+
+  const isMatch = (tSettings, current) => {
+    return Object.keys(current).every(k => tSettings[k] === current[k]);
+  };
+  const activeTemplate = templates.find(t => isMatch(t.settings, currentSettings));
 
   const handleApplyTemplate = (t) => {
     const s = t.settings;
@@ -157,7 +167,7 @@ export default function StopwatchTab() {
         title="Time"
         initialSeconds={Math.floor(intervalVal / 1000)}
         onClose={() => setIsPickerOpen(false)}
-        onSave={(val) => { setIntervalVal(val * 1000); setActiveTemplateName(""); }}
+        onSave={(val) => setIntervalVal(val * 1000)}
       />
       <TemplatesModal
         isOpen={isTemplatesOpen}
@@ -165,14 +175,17 @@ export default function StopwatchTab() {
         type="stopwatch"
         currentSettings={currentSettings}
         onApply={handleApplyTemplate}
+        templates={templates}
+        setTemplates={setTemplates}
+        activeTemplateId={activeTemplate?.id}
       />
       <div className="toolbar" style={{justifyContent: 'flex-start'}}>
         <button onClick={() => setIsTemplatesOpen(true)}><Bookmark size={20} /></button>
       </div>
       <div className="display-container">
-        {activeTemplateName && (
+        {activeTemplate && (
           <div style={{ position: 'absolute', top: '15px', color: 'var(--stopwatch-color)', fontSize: '0.9rem', fontWeight: 'bold' }}>
-            ★ {activeTemplateName}
+            ★ {activeTemplate.name}
           </div>
         )}
         <div className="time-display">
@@ -188,7 +201,7 @@ export default function StopwatchTab() {
       <div className="settings-panel">
         <div className="setting-row">
           <label className="checkbox-label">
-            <input type="checkbox" checked={intervalSpeak} onChange={e => { setIntervalSpeak(e.target.checked); setActiveTemplateName(""); }} />
+            <input type="checkbox" checked={intervalSpeak} onChange={e => setIntervalSpeak(e.target.checked)} />
             <span className="custom-checkbox pink-check"><Check size={14} /></span> Interval
           </label>
           <button 

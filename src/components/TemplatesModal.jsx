@@ -1,21 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Bookmark, Plus, X, Edit2, Check } from 'lucide-react';
 
-export default function TemplatesModal({ isOpen, onClose, type, currentSettings, onApply }) {
-  const [templates, setTemplates] = useState([]);
+export default function TemplatesModal({ isOpen, onClose, type, currentSettings, onApply, templates, setTemplates, activeTemplateId }) {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
 
   const storageKey = `voiceClock_${type}Templates`;
-
-  useEffect(() => {
-    if (isOpen) {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        setTemplates(JSON.parse(stored));
-      }
-    }
-  }, [isOpen, storageKey]);
 
   if (!isOpen) return null;
 
@@ -105,10 +95,10 @@ export default function TemplatesModal({ isOpen, onClose, type, currentSettings,
                   ) : (
                     <div style={{flex: 1, display: 'flex', alignItems: 'center', gap: '10px'}}>
                       <span 
-                        style={{cursor: 'pointer', flex: 1, fontWeight: '600'}} 
+                        style={{cursor: 'pointer', flex: 1, fontWeight: '600', color: activeTemplateId === t.id ? color : 'var(--text-main)'}} 
                         onClick={() => handleApply(t)}
                       >
-                        {t.name}
+                        {activeTemplateId === t.id ? '★ ' : ''}{t.name}
                       </span>
                       <button className="icon-btn" onClick={() => startRename(t)}><Edit2 size={16} /></button>
                     </div>

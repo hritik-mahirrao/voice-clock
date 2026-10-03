@@ -17,11 +17,21 @@ export default function TimerTab() {
 
   const [pickerConfig, setPickerConfig] = useState({ isOpen: false, type: null, initialVal: 0 });
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
-  const [activeTemplateName, setActiveTemplateName] = useState("");
+  const [templates, setTemplates] = useState([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('voiceClock_timerTemplates');
+    if (stored) setTemplates(JSON.parse(stored));
+  }, []);
 
   const currentSettings = {
     seconds, preCountdown, intervalSpeak, intervalVal, countdownSpeak, countdownVal
   };
+
+  const isMatch = (tSettings, current) => {
+    return Object.keys(current).every(k => tSettings[k] === current[k]);
+  };
+  const activeTemplate = templates.find(t => isMatch(t.settings, currentSettings));
 
   const handleApplyTemplate = (t) => {
     const s = t.settings;
@@ -31,7 +41,6 @@ export default function TimerTab() {
     setIntervalVal(s.intervalVal || 60);
     setCountdownSpeak(s.countdownSpeak ?? true);
     setCountdownVal(s.countdownVal || 10);
-    setActiveTemplateName(t.name);
   };
 
   const timerRef = useRef(null);
@@ -115,7 +124,6 @@ export default function TimerTab() {
   const addTime = (addSec) => {
     if (!isRunning) {
       setSeconds(prev => prev + addSec);
-      setActiveTemplateName("");
     }
   };
 
@@ -136,7 +144,6 @@ export default function TimerTab() {
   const handleSavePicker = (val) => {
     if (pickerConfig.type === 'interval') setIntervalVal(val);
     else if (pickerConfig.type === 'countdown') setCountdownVal(val);
-    setActiveTemplateName("");
   };
 
   return (
@@ -154,6 +161,9 @@ export default function TimerTab() {
         type="timer"
         currentSettings={currentSettings}
         onApply={handleApplyTemplate}
+        templates={templates}
+        setTemplates={setTemplates}
+        activeTemplateId={activeTemplate?.id}
       />
       <div className="toolbar">
         <button onClick={() => setIsTemplatesOpen(true)}><Bookmark size={20} /></button>
@@ -164,9 +174,9 @@ export default function TimerTab() {
       </div>
       
       <div className="display-container">
-        {activeTemplateName && (
+        {activeTemplate && (
           <div style={{ position: 'absolute', top: '15px', color: 'var(--timer-color)', fontSize: '0.9rem', fontWeight: 'bold' }}>
-            ★ {activeTemplateName}
+            ★ {activeTemplate.name}
           </div>
         )}
         <div className="time-display">
@@ -182,7 +192,7 @@ export default function TimerTab() {
       <div className="settings-panel">
         <div className="setting-row">
           <label>Countdown before starting</label>
-          <select value={preCountdown} onChange={e => { setPreCountdown(Number(e.target.value)); setActiveTemplateName(""); }}>
+          <select value={preCountdown} onChange={e => setPreCountdown(Number(e.target.value))}>
             <option value="0">0s</option>
             <option value="3">3s</option>
             <option value="5">5s</option>
@@ -192,7 +202,7 @@ export default function TimerTab() {
         </div>
         <div className="setting-row">
           <label className="checkbox-label">
-            <input type="checkbox" checked={intervalSpeak} onChange={e => { setIntervalSpeak(e.target.checked); setActiveTemplateName(""); }} />
+            <input type="checkbox" checked={intervalSpeak} onChange={e => setIntervalSpeak(e.target.checked)} />
             <span className="custom-checkbox"><Check size={14} /></span> Interval
           </label>
           <button 
@@ -203,14 +213,14 @@ export default function TimerTab() {
             {formatShortTime(intervalVal)} <span style={{fontSize: '0.7em'}}>▼</span>
           </button>
           <label className="checkbox-label" style={{marginLeft: 'auto'}}>
-            <input type="checkbox" checked={intervalSpeak} onChange={e => { setIntervalSpeak(e.target.checked); setActiveTemplateName(""); }} />
+            <input type="checkbox" checked={intervalSpeak} onChange={e => setIntervalSpeak(e.target.checked)} />
             <span className="custom-checkbox"><Check size={14} /></span> Speaking
           </label>
           <button className="icon-btn"><BellOff size={16} /></button>
         </div>
         <div className="setting-row">
           <label className="checkbox-label">
-            <input type="checkbox" checked={countdownSpeak} onChange={e => { setCountdownSpeak(e.target.checked); setActiveTemplateName(""); }} />
+            <input type="checkbox" checked={countdownSpeak} onChange={e => setCountdownSpeak(e.target.checked)} />
             <span className="custom-checkbox"><Check size={14} /></span> Countdown
           </label>
           <button 
