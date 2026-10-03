@@ -4,49 +4,28 @@ import { Hourglass } from 'lucide-react';
 const PickerColumn = ({ val, setVal, max, label }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editVal, setEditVal] = useState("");
-  
-  const isDragging = useRef(false);
-  const hasDragged = useRef(false);
-  const startY = useRef(0);
-  const startVal = useRef(val);
+  const scrollRef = useRef(null);
+  const isScrolling = useRef(false);
+  const scrollTimeout = useRef(null);
 
-  const prev = val - 1 < 0 ? max : val - 1;
-  const next = val + 1 > max ? 0 : val + 1;
-
-  const handlePointerDown = (e) => {
-    if (isEditing) return;
-    isDragging.current = true;
-    hasDragged.current = false;
-    startY.current = e.clientY;
-    startVal.current = val;
-    e.target.setPointerCapture(e.pointerId);
-  };
-
-  const handlePointerMove = (e) => {
-    if (!isDragging.current) return;
-    const dy = startY.current - e.clientY;
-    if (Math.abs(dy) > 5) {
-        hasDragged.current = true;
+  useEffect(() => {
+    if (scrollRef.current && !isEditing && !isScrolling.current) {
+      scrollRef.current.scrollTop = val * 40;
     }
-    const ticks = Math.round(dy / 25);
-    let newVal = startVal.current + ticks;
-    while (newVal < 0) newVal += (max + 1);
-    newVal = newVal % (max + 1);
-    if (newVal !== val) {
+  }, [val, isEditing]);
+
+  const handleScroll = (e) => {
+    isScrolling.current = true;
+    clearTimeout(scrollTimeout.current);
+    
+    const newVal = Math.round(e.target.scrollTop / 40);
+    if (newVal >= 0 && newVal <= max && newVal !== val) {
       setVal(newVal);
     }
-  };
-
-  const handlePointerUp = (e) => {
-    if (!isDragging.current) return;
-    isDragging.current = false;
-    e.target.releasePointerCapture(e.pointerId);
-  };
-
-  const handleCurrentClick = () => {
-    if (hasDragged.current) return;
-    setIsEditing(true);
-    setEditVal(val.toString());
+    
+    scrollTimeout.current = setTimeout(() => {
+      isScrolling.current = false;
+    }, 150);
   };
 
   const handleEditSubmit = () => {
@@ -59,35 +38,49 @@ const PickerColumn = ({ val, setVal, max, label }) => {
   };
 
   return (
-    <div className="picker-col-wrapper" style={{display: 'flex', alignItems: 'center'}}>
-      <div 
-        className="picker-col"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        style={{ touchAction: 'none' }}
-      >
-        <div className="picker-item prev" onClick={() => !hasDragged.current && setVal(prev)}>{prev}</div>
-        
-        {isEditing ? (
+    <div className="picker-col-wrapper" style={{display: 'flex', alignItems: 'center', position: 'relative'}}>
+      <div className="picker-highlight"></div>
+      
+      {isEditing ? (
+        <div className="picker-col">
+          <div className="picker-pad"></div>
           <input 
             type="number" 
-            className="picker-item current picker-input" 
+            className="picker-item picker-input current" 
             value={editVal}
             onChange={e => setEditVal(e.target.value)}
             onBlur={handleEditSubmit}
             onKeyDown={e => e.key === 'Enter' && handleEditSubmit()}
             autoFocus
           />
-        ) : (
-          <div className="picker-item current" onClick={handleCurrentClick}>
-            {val}
-          </div>
-        )}
-
-        <div className="picker-item next" onClick={() => !hasDragged.current && setVal(next)}>{next}</div>
-      </div>
+          <div className="picker-pad"></div>
+        </div>
+      ) : (
+        <div 
+          className="picker-col"
+          onScroll={handleScroll}
+          ref={scrollRef}
+        >
+          <div className="picker-pad"></div>
+          {Array.from({length: max + 1}).map((_, i) => (
+            <div 
+              key={i} 
+              className={`picker-item ${i === val ? 'current' : ''}`} 
+              onClick={() => {
+                if (i === val) {
+                  setIsEditing(true);
+                  setEditVal(val.toString());
+                } else {
+                  scrollRef.current.scrollTo({top: i * 40, behavior: 'smooth'});
+                }
+              }}
+            >
+              {i}
+            </div>
+          ))}
+          <div className="picker-pad"></div>
+        </div>
+      )}
       <span className="picker-label">{label}</span>
     </div>
   );
