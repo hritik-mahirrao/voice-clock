@@ -20,6 +20,7 @@ export default function StopwatchTab() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
   const [templates, setTemplates] = useState([]);
+  const [editingTemplateId, setEditingTemplateId] = useState(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('voiceClock_stopwatchTemplates');
@@ -42,6 +43,20 @@ export default function StopwatchTab() {
     setIntervalSpeak(s.intervalSpeak ?? true);
     setIntervalVal(s.intervalVal || 30000);
     setVoiceNote(s.voiceNote || "");
+  };
+
+  const handleEditSettings = (t) => {
+    handleApplyTemplate(t);
+    setEditingTemplateId(t.id);
+  };
+
+  const handleUpdateTemplate = () => {
+    const updatedTemplates = templates.map(t => 
+      t.id === editingTemplateId ? { ...t, settings: currentSettings } : t
+    );
+    setTemplates(updatedTemplates);
+    localStorage.setItem('voiceClock_stopwatchTemplates', JSON.stringify(updatedTemplates));
+    setEditingTemplateId(null);
   };
 
   const swRef = useRef(null);
@@ -184,12 +199,22 @@ export default function StopwatchTab() {
         templates={templates}
         setTemplates={setTemplates}
         activeTemplateId={activeTemplate?.id}
+        onEditSettings={handleEditSettings}
       />
       <div className="toolbar" style={{justifyContent: 'flex-start'}}>
         <button onClick={() => setIsTemplatesOpen(true)}><Bookmark size={20} /></button>
       </div>
       <div className="display-container">
-        {activeTemplate && (
+        {editingTemplateId && (
+          <div style={{ position: 'absolute', top: '10px', left: '10px', right: '10px', background: 'var(--stopwatch-color)', padding: '10px', borderRadius: '8px', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white', fontWeight: 'bold' }}>
+            <span>Editing Template</span>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setEditingTemplateId(null)} style={{ background: 'rgba(0,0,0,0.3)', border: 'none', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+              <button onClick={handleUpdateTemplate} style={{ background: 'white', border: 'none', color: 'var(--stopwatch-color)', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontFamily: 'inherit' }}>Update</button>
+            </div>
+          </div>
+        )}
+        {!editingTemplateId && activeTemplate && (
           <div style={{ position: 'absolute', top: '15px', color: 'var(--stopwatch-color)', fontSize: '0.9rem', fontWeight: 'bold' }}>
             ★ {activeTemplate.name}
           </div>
