@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Check } from 'lucide-react';
+import { Play, Pause, Check, Bookmark } from 'lucide-react';
 import { speak, formatSpeechTime } from '../utils/speech';
 import TimePickerModal from './TimePickerModal';
+import TemplatesModal from './TemplatesModal';
 
 export default function StopwatchTab() {
   const [ms, setMs] = useState(0);
@@ -16,6 +17,17 @@ export default function StopwatchTab() {
   const [speakLapTotal, setSpeakLapTotal] = useState(false);
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+
+  const currentSettings = {
+    intervalSpeak,
+    intervalVal
+  };
+
+  const handleApplyTemplate = (s) => {
+    setIntervalSpeak(s.intervalSpeak ?? true);
+    setIntervalVal(s.intervalVal || 30000);
+  };
 
   const swRef = useRef(null);
   const startTimeRef = useRef(null);
@@ -144,6 +156,16 @@ export default function StopwatchTab() {
         onClose={() => setIsPickerOpen(false)}
         onSave={(val) => setIntervalVal(val * 1000)}
       />
+      <TemplatesModal
+        isOpen={isTemplatesOpen}
+        onClose={() => setIsTemplatesOpen(false)}
+        type="stopwatch"
+        currentSettings={currentSettings}
+        onApply={handleApplyTemplate}
+      />
+      <div className="toolbar" style={{justifyContent: 'flex-start'}}>
+        <button onClick={() => setIsTemplatesOpen(true)}><Bookmark size={20} /></button>
+      </div>
       <div className="display-container">
         <div className="time-display">
           <span>{h}</span><span className="colon">:</span>

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Check, List, Volume2, Palette, Type, Settings, BellOff } from 'lucide-react';
+import { Play, Pause, RotateCcw, Check, List, Volume2, Palette, Type, Settings, BellOff, Bookmark } from 'lucide-react';
 import { speak, formatSpeechTime } from '../utils/speech';
 import TimePickerModal from './TimePickerModal';
+import TemplatesModal from './TemplatesModal';
 
 export default function TimerTab() {
   const [seconds, setSeconds] = useState(0);
@@ -15,6 +16,20 @@ export default function TimerTab() {
   const [countdownVal, setCountdownVal] = useState(10);
 
   const [pickerConfig, setPickerConfig] = useState({ isOpen: false, type: null, initialVal: 0 });
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+
+  const currentSettings = {
+    seconds, preCountdown, intervalSpeak, intervalVal, countdownSpeak, countdownVal
+  };
+
+  const handleApplyTemplate = (s) => {
+    setSeconds(s.seconds || 0);
+    setPreCountdown(s.preCountdown ?? 0);
+    setIntervalSpeak(s.intervalSpeak ?? true);
+    setIntervalVal(s.intervalVal || 60);
+    setCountdownSpeak(s.countdownSpeak ?? true);
+    setCountdownVal(s.countdownVal || 10);
+  };
 
   const timerRef = useRef(null);
   const targetTimeRef = useRef(0);
@@ -128,7 +143,15 @@ export default function TimerTab() {
         onClose={() => setPickerConfig({ ...pickerConfig, isOpen: false })}
         onSave={handleSavePicker}
       />
+      <TemplatesModal
+        isOpen={isTemplatesOpen}
+        onClose={() => setIsTemplatesOpen(false)}
+        type="timer"
+        currentSettings={currentSettings}
+        onApply={handleApplyTemplate}
+      />
       <div className="toolbar">
+        <button onClick={() => setIsTemplatesOpen(true)}><Bookmark size={20} /></button>
         <button><Volume2 size={20} /></button>
         <button className="active-blue"><Palette size={20} /></button>
         <button><Type size={20} /></button>
