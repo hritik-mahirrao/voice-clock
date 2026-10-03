@@ -18,35 +18,77 @@ export default function StopwatchTab() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const swRef = useRef(null);
-  const nextTargetRef = useRef(30000);
+  const startTimeRef = useRef(null);
+  const elapsedWhenPausedRef = useRef(0);
+  const wakeLockRef = useRef(null);
+
+  const requestWakeLock = async () => {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+      }
+    } catch (err) {
+      console.error('Wake Lock error:', err);
+    }
+  };
+
+  const releaseWakeLock = () => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release().catch(console.error);
+      wakeLockRef.current = null;
+    }
+  };
 
   useEffect(() => {
+    let lastSpokenInterval = null;
+
     if (isRunning) {
-      nextTargetRef.current = (Math.floor(ms / intervalVal) + 1) * intervalVal;
+      requestWakeLock();
+      if (!startTimeRef.current) {
+        startTimeRef.current = Date.now() - elapsedWhenPausedRef.current;
+      }
       
       swRef.current = setInterval(() => {
-        setMs(prev => {
-          const next = prev + 10;
-          if (intervalSpeak && next >= nextTargetRef.current) {
-            speak(formatSpeechTime(Math.floor(next / 1000)));
-            nextTargetRef.current += intervalVal;
+        const now = Date.now();
+        const currentMs = now - startTimeRef.current;
+        setMs(currentMs);
+
+        if (intervalSpeak && intervalVal > 0) {
+          const currentIntervalTarget = Math.floor(currentMs / intervalVal) * intervalVal;
+          if (currentIntervalTarget > 0 && currentIntervalTarget !== lastSpokenInterval && currentMs >= currentIntervalTarget) {
+            speak(formatSpeechTime(Math.floor(currentIntervalTarget / 1000)));
+            lastSpokenInterval = currentIntervalTarget;
           }
-          return next;
-        });
-      }, 10);
+        }
+      }, 50); // Run frequently enough for UI updates, but relies on Date.now() for accuracy
     } else {
       clearInterval(swRef.current);
+      releaseWakeLock();
+      if (ms > 0) {
+        elapsedWhenPausedRef.current = ms;
+      }
     }
-    return () => clearInterval(swRef.current);
+    return () => {
+      clearInterval(swRef.current);
+      releaseWakeLock();
+    };
   }, [isRunning, intervalSpeak, intervalVal]);
 
-  const toggleSw = () => setIsRunning(!isRunning);
+  const toggleSw = () => {
+    if (!isRunning && ms === 0) {
+       startTimeRef.current = null;
+       elapsedWhenPausedRef.current = 0;
+    }
+    setIsRunning(!isRunning);
+  }
 
   const reset = () => {
     setIsRunning(false);
     setMs(0);
     setLaps([]);
     setLastLapMs(0);
+    startTimeRef.current = null;
+    elapsedWhenPausedRef.current = 0;
   };
 
   const formatDisplay = (totalMs) => {

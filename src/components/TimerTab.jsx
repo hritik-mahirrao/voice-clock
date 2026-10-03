@@ -17,39 +17,76 @@ export default function TimerTab() {
   const [pickerConfig, setPickerConfig] = useState({ isOpen: false, type: null, initialVal: 0 });
 
   const timerRef = useRef(null);
+  const targetTimeRef = useRef(0);
+  const wakeLockRef = useRef(null);
 
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
 
+  const requestWakeLock = async () => {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+      }
+    } catch (err) {
+      console.error('Wake Lock error:', err);
+    }
+  };
+
+  const releaseWakeLock = () => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release().catch(console.error);
+      wakeLockRef.current = null;
+    }
+  };
+
   useEffect(() => {
+    let lastSpokenInterval = null;
+    let lastSpokenCountdown = null;
+
     if (isRunning) {
+      requestWakeLock();
+      targetTimeRef.current = Date.now() + seconds * 1000;
+      
       timerRef.current = setInterval(() => {
-        setSeconds(prev => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            setIsRunning(false);
-            speak("Time is up!");
-            return 0;
+        const now = Date.now();
+        const remainingMs = targetTimeRef.current - now;
+        const remainingSec = Math.ceil(remainingMs / 1000);
+
+        if (remainingSec <= 0) {
+          clearInterval(timerRef.current);
+          setIsRunning(false);
+          setSeconds(0);
+          releaseWakeLock();
+          speak("Time is up!");
+          return;
+        }
+        
+        setSeconds(remainingSec);
+        
+        if (intervalSpeak && remainingSec > 0 && remainingSec % intervalVal === 0) {
+          if (lastSpokenInterval !== remainingSec) {
+            speak(formatSpeechTime(remainingSec) + " left");
+            lastSpokenInterval = remainingSec;
           }
-          
-          const next = prev - 1;
-          
-          if (intervalSpeak && next > 0 && next % intervalVal === 0) {
-            speak(formatSpeechTime(next) + " left");
+        }
+        
+        if (countdownSpeak && remainingSec > 0 && remainingSec <= countdownVal) {
+          if (lastSpokenCountdown !== remainingSec) {
+            speak(remainingSec.toString());
+            lastSpokenCountdown = remainingSec;
           }
-          
-          if (countdownSpeak && next > 0 && next <= countdownVal) {
-            speak(next.toString());
-          }
-          
-          return next;
-        });
-      }, 1000);
+        }
+      }, 100); // Check frequently to handle background throttling
     } else {
       clearInterval(timerRef.current);
+      releaseWakeLock();
     }
-    return () => clearInterval(timerRef.current);
+    return () => {
+      clearInterval(timerRef.current);
+      releaseWakeLock();
+    };
   }, [isRunning, intervalSpeak, intervalVal, countdownSpeak, countdownVal]);
 
   const toggleTimer = () => {
