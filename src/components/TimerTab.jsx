@@ -15,6 +15,9 @@ export default function TimerTab() {
   const [countdownSpeak, setCountdownSpeak] = useState(true);
   const [countdownVal, setCountdownVal] = useState(10);
   const [voiceNote, setVoiceNote] = useState("");
+  const [voiceNoteSpeak, setVoiceNoteSpeak] = useState(true);
+  const [voiceNoteIntervalType, setVoiceNoteIntervalType] = useState('sync'); // 'sync' or 'custom'
+  const [voiceNoteIntervalVal, setVoiceNoteIntervalVal] = useState(30);
 
   const [pickerConfig, setPickerConfig] = useState({ isOpen: false, type: null, initialVal: 0 });
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
@@ -27,7 +30,7 @@ export default function TimerTab() {
   }, []);
 
   const currentSettings = {
-    seconds, preCountdown, intervalSpeak, intervalVal, countdownSpeak, countdownVal, voiceNote
+    seconds, preCountdown, intervalSpeak, intervalVal, countdownSpeak, countdownVal, voiceNote, voiceNoteSpeak, voiceNoteIntervalType, voiceNoteIntervalVal
   };
 
   const isMatch = (tSettings, current) => {
@@ -44,6 +47,9 @@ export default function TimerTab() {
     setCountdownSpeak(s.countdownSpeak ?? true);
     setCountdownVal(s.countdownVal || 10);
     setVoiceNote(s.voiceNote || "");
+    setVoiceNoteSpeak(s.voiceNoteSpeak ?? true);
+    setVoiceNoteIntervalType(s.voiceNoteIntervalType || 'sync');
+    setVoiceNoteIntervalVal(s.voiceNoteIntervalVal || 30);
   };
 
   const handleEditSettings = (t) => {
@@ -68,6 +74,9 @@ export default function TimerTab() {
     setCountdownSpeak(true);
     setCountdownVal(10);
     setVoiceNote("");
+    setVoiceNoteSpeak(true);
+    setVoiceNoteIntervalType('sync');
+    setVoiceNoteIntervalVal(30);
   };
 
   const timerRef = useRef(null);
@@ -98,6 +107,7 @@ export default function TimerTab() {
   useEffect(() => {
     let lastSpokenInterval = null;
     let lastSpokenCountdown = null;
+    let lastSpokenNoteInterval = null;
 
     if (isRunning) {
       requestWakeLock();
@@ -119,15 +129,29 @@ export default function TimerTab() {
         
         setSeconds(remainingSec);
         
-        if (intervalSpeak && remainingSec > 0 && remainingSec % intervalVal === 0) {
-          if (lastSpokenInterval !== remainingSec) {
-            let msg = formatSpeechTime(remainingSec) + " left";
-            if (voiceNote.trim()) {
-              msg += ". " + voiceNote.trim();
-            }
-            speak(msg);
-            lastSpokenInterval = remainingSec;
-          }
+        let shouldSpeakTime = intervalSpeak && remainingSec > 0 && remainingSec % intervalVal === 0 && lastSpokenInterval !== remainingSec;
+        let shouldSpeakNote = voiceNoteSpeak && voiceNote.trim() && remainingSec > 0;
+        
+        let noteToSpeak = "";
+        if (shouldSpeakNote) {
+           if (voiceNoteIntervalType === 'sync' && shouldSpeakTime) {
+              noteToSpeak = voiceNote.trim();
+           } else if (voiceNoteIntervalType === 'custom' && voiceNoteIntervalVal > 0 && remainingSec % voiceNoteIntervalVal === 0 && lastSpokenNoteInterval !== remainingSec) {
+              noteToSpeak = voiceNote.trim();
+              lastSpokenNoteInterval = remainingSec;
+           }
+        }
+
+        if (shouldSpeakTime || noteToSpeak) {
+           let msg = "";
+           if (shouldSpeakTime) {
+             msg += formatSpeechTime(remainingSec) + " left";
+             lastSpokenInterval = remainingSec;
+           }
+           if (noteToSpeak) {
+             msg += (msg ? ". " : "") + noteToSpeak;
+           }
+           speak(msg);
         }
         
         if (countdownSpeak && remainingSec > 0 && remainingSec <= countdownVal) {
@@ -175,6 +199,7 @@ export default function TimerTab() {
   const handleSavePicker = (val) => {
     if (pickerConfig.type === 'interval') setIntervalVal(val);
     else if (pickerConfig.type === 'countdown') setCountdownVal(val);
+    else if (pickerConfig.type === 'noteInterval') setVoiceNoteIntervalVal(val);
   };
 
   return (
@@ -240,7 +265,10 @@ export default function TimerTab() {
 
       <div className="settings-panel">
         <div className="setting-row">
-          <label>Voice Note</label>
+          <label className="checkbox-label">
+            <input type="checkbox" checked={voiceNoteSpeak} onChange={e => setVoiceNoteSpeak(e.target.checked)} />
+            <span className="custom-checkbox"><Check size={14} /></span> Voice Note
+          </label>
           <input 
             type="text" 
             placeholder="e.g. Keep your core tight" 
@@ -249,6 +277,28 @@ export default function TimerTab() {
             style={{flex: 1, background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', marginLeft: '10px', fontFamily: 'inherit'}}
           />
         </div>
+        {voiceNoteSpeak && (
+          <div className="setting-row">
+            <label style={{marginLeft: '25px', color: 'var(--text-muted)'}}>Note Interval</label>
+            <select 
+              value={voiceNoteIntervalType} 
+              onChange={e => setVoiceNoteIntervalType(e.target.value)}
+              style={{background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '4px', borderRadius: '4px', fontFamily: 'inherit', marginLeft: '10px'}}
+            >
+              <option value="sync">Sync with Time Interval</option>
+              <option value="custom">Custom Interval</option>
+            </select>
+            {voiceNoteIntervalType === 'custom' && (
+              <button 
+                className="text-btn flex-btn" 
+                onClick={() => setPickerConfig({isOpen: true, type: 'noteInterval', initialVal: voiceNoteIntervalVal})}
+                style={{background: 'var(--btn-bg)', padding: '5px 10px', borderRadius: '5px', border: '1px solid #444', fontSize: '0.9rem', marginLeft: '10px'}}
+              >
+                {formatShortTime(voiceNoteIntervalVal)} <span style={{fontSize: '0.7em'}}>▼</span>
+              </button>
+            )}
+          </div>
+        )}
         <div className="setting-row">
           <label>Countdown before starting</label>
           <select value={preCountdown} onChange={e => setPreCountdown(Number(e.target.value))}>

@@ -16,8 +16,11 @@ export default function StopwatchTab() {
   const [speakLapTime, setSpeakLapTime] = useState(true);
   const [speakLapTotal, setSpeakLapTotal] = useState(false);
   const [voiceNote, setVoiceNote] = useState("");
+  const [voiceNoteSpeak, setVoiceNoteSpeak] = useState(true);
+  const [voiceNoteIntervalType, setVoiceNoteIntervalType] = useState('sync'); // 'sync' or 'custom'
+  const [voiceNoteIntervalVal, setVoiceNoteIntervalVal] = useState(30000); // ms
 
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [pickerConfig, setPickerConfig] = useState({ isOpen: false, type: null, initialVal: 0 });
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
   const [templates, setTemplates] = useState([]);
   const [editingTemplateId, setEditingTemplateId] = useState(null);
@@ -30,7 +33,10 @@ export default function StopwatchTab() {
   const currentSettings = {
     intervalSpeak,
     intervalVal,
-    voiceNote
+    voiceNote,
+    voiceNoteSpeak,
+    voiceNoteIntervalType,
+    voiceNoteIntervalVal
   };
 
   const isMatch = (tSettings, current) => {
@@ -43,6 +49,9 @@ export default function StopwatchTab() {
     setIntervalSpeak(s.intervalSpeak ?? true);
     setIntervalVal(s.intervalVal || 30000);
     setVoiceNote(s.voiceNote || "");
+    setVoiceNoteSpeak(s.voiceNoteSpeak ?? true);
+    setVoiceNoteIntervalType(s.voiceNoteIntervalType || 'sync');
+    setVoiceNoteIntervalVal(s.voiceNoteIntervalVal || 30000);
   };
 
   const handleEditSettings = (t) => {
@@ -63,6 +72,9 @@ export default function StopwatchTab() {
     setIntervalSpeak(true);
     setIntervalVal(30000);
     setVoiceNote("");
+    setVoiceNoteSpeak(true);
+    setVoiceNoteIntervalType('sync');
+    setVoiceNoteIntervalVal(30000);
   };
 
   const swRef = useRef(null);
@@ -89,6 +101,7 @@ export default function StopwatchTab() {
 
   useEffect(() => {
     let lastSpokenInterval = null;
+    let lastSpokenNoteInterval = null;
 
     if (isRunning) {
       requestWakeLock();
@@ -101,16 +114,41 @@ export default function StopwatchTab() {
         const currentMs = now - startTimeRef.current;
         setMs(currentMs);
 
+        let shouldSpeakTime = false;
+        let currentIntervalTarget = 0;
         if (intervalSpeak && intervalVal > 0) {
-          const currentIntervalTarget = Math.floor(currentMs / intervalVal) * intervalVal;
+          currentIntervalTarget = Math.floor(currentMs / intervalVal) * intervalVal;
           if (currentIntervalTarget > 0 && currentIntervalTarget !== lastSpokenInterval && currentMs >= currentIntervalTarget) {
-            let msg = formatSpeechTime(Math.floor(currentIntervalTarget / 1000));
-            if (voiceNote.trim()) {
-              msg += ". " + voiceNote.trim();
+            shouldSpeakTime = true;
+          }
+        }
+
+        let shouldSpeakNote = false;
+        let currentNoteIntervalTarget = 0;
+        if (voiceNoteSpeak && voiceNote.trim()) {
+          if (voiceNoteIntervalType === 'sync') {
+            shouldSpeakNote = shouldSpeakTime;
+          } else if (voiceNoteIntervalType === 'custom' && voiceNoteIntervalVal > 0) {
+            currentNoteIntervalTarget = Math.floor(currentMs / voiceNoteIntervalVal) * voiceNoteIntervalVal;
+            if (currentNoteIntervalTarget > 0 && currentNoteIntervalTarget !== lastSpokenNoteInterval && currentMs >= currentNoteIntervalTarget) {
+              shouldSpeakNote = true;
             }
-            speak(msg);
+          }
+        }
+
+        if (shouldSpeakTime || shouldSpeakNote) {
+          let msg = "";
+          if (shouldSpeakTime) {
+            msg += formatSpeechTime(Math.floor(currentIntervalTarget / 1000));
             lastSpokenInterval = currentIntervalTarget;
           }
+          if (shouldSpeakNote) {
+            msg += (msg ? ". " : "") + voiceNote.trim();
+            if (voiceNoteIntervalType === 'custom') {
+              lastSpokenNoteInterval = currentNoteIntervalTarget;
+            }
+          }
+          speak(msg);
         }
       }, 50); // Run frequently enough for UI updates, but relies on Date.now() for accuracy
     } else {
@@ -187,14 +225,19 @@ export default function StopwatchTab() {
     return `${ss}s`;
   };
 
+  const handleSavePicker = (val) => {
+    if (pickerConfig.type === 'interval') setIntervalVal(val * 1000);
+    else if (pickerConfig.type === 'noteInterval') setVoiceNoteIntervalVal(val * 1000);
+  };
+
   return (
     <section className="tab-content pink-theme">
       <TimePickerModal 
-        isOpen={isPickerOpen}
+        isOpen={pickerConfig.isOpen}
         title="Time"
-        initialSeconds={Math.floor(intervalVal / 1000)}
-        onClose={() => setIsPickerOpen(false)}
-        onSave={(val) => setIntervalVal(val * 1000)}
+        initialSeconds={Math.floor((pickerConfig.type === 'noteInterval' ? voiceNoteIntervalVal : intervalVal) / 1000)}
+        onClose={() => setPickerConfig({ ...pickerConfig, isOpen: false })}
+        onSave={handleSavePicker}
       />
       <TemplatesModal
         isOpen={isTemplatesOpen}
@@ -242,7 +285,10 @@ export default function StopwatchTab() {
 
       <div className="settings-panel">
         <div className="setting-row">
-          <label>Voice Note</label>
+          <label className="checkbox-label">
+            <input type="checkbox" checked={voiceNoteSpeak} onChange={e => setVoiceNoteSpeak(e.target.checked)} />
+            <span className="custom-checkbox pink-check"><Check size={14} /></span> Voice Note
+          </label>
           <input 
             type="text" 
             placeholder="e.g. Keep your core tight" 
@@ -251,6 +297,28 @@ export default function StopwatchTab() {
             style={{flex: 1, background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', marginLeft: '10px', fontFamily: 'inherit'}}
           />
         </div>
+        {voiceNoteSpeak && (
+          <div className="setting-row">
+            <label style={{marginLeft: '25px', color: 'var(--text-muted)'}}>Note Interval</label>
+            <select 
+              value={voiceNoteIntervalType} 
+              onChange={e => setVoiceNoteIntervalType(e.target.value)}
+              style={{background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '4px', borderRadius: '4px', fontFamily: 'inherit', marginLeft: '10px'}}
+            >
+              <option value="sync">Sync with Time Interval</option>
+              <option value="custom">Custom Interval</option>
+            </select>
+            {voiceNoteIntervalType === 'custom' && (
+              <button 
+                className="text-btn flex-btn" 
+                onClick={() => setPickerConfig({isOpen: true, type: 'noteInterval', initialVal: voiceNoteIntervalVal})}
+                style={{background: 'var(--btn-bg)', padding: '5px 10px', borderRadius: '5px', border: '1px solid #444', fontSize: '0.9rem', marginLeft: '10px'}}
+              >
+                {formatShortTime(voiceNoteIntervalVal)} <span style={{fontSize: '0.7em'}}>▼</span>
+              </button>
+            )}
+          </div>
+        )}
         <div className="setting-row">
           <label className="checkbox-label">
             <input type="checkbox" checked={intervalSpeak} onChange={e => setIntervalSpeak(e.target.checked)} />
@@ -259,7 +327,7 @@ export default function StopwatchTab() {
           <button 
             className="text-btn" 
             style={{background: 'var(--btn-bg)', padding: '5px 10px', borderRadius: '5px', border: '1px solid #444', fontSize: '0.9rem'}}
-            onClick={() => setIsPickerOpen(true)}
+            onClick={() => setPickerConfig({isOpen: true, type: 'interval', initialVal: intervalVal})}
           >
             {formatShortTime(intervalVal)} <span style={{fontSize: '0.7em'}}>▼</span>
           </button>
