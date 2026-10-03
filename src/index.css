@@ -564,41 +564,59 @@ select {
   justify-content: center;
   align-items: center;
   gap: 10px;
+  /* 3D Wheel Fade Effect */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
 }
 
 .picker-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 1.5rem;
+  height: 120px;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  position: relative;
   width: 60px;
+}
+.picker-col::-webkit-scrollbar { display: none; }
+
+.picker-pad {
+  height: 40px;
 }
 
 .picker-item {
+  height: 40px;
+  line-height: 40px;
   width: 100%;
   text-align: center;
-  padding: 10px 0;
+  scroll-snap-align: center;
+  color: #777;
+  font-size: 1.2rem;
+  transition: all 0.1s ease-out;
   cursor: pointer;
   user-select: none;
 }
 
-.picker-item.prev, .picker-item.next {
-  color: #777;
-  font-size: 1.2rem;
-}
-
 .picker-item.current {
   color: var(--text-main);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.picker-highlight {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  width: 60px;
+  height: 40px;
   border-top: 1px solid #777;
   border-bottom: 1px solid #777;
-  font-weight: 600;
+  pointer-events: none;
 }
 
 .picker-label {
   font-size: 1rem;
   color: var(--text-muted);
   align-self: center;
-  margin-top: -5px; /* align roughly with the current item */
 }
 
 .picker-input {
