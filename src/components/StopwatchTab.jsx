@@ -18,15 +18,18 @@ export default function StopwatchTab() {
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [activeTemplateName, setActiveTemplateName] = useState("");
 
   const currentSettings = {
     intervalSpeak,
     intervalVal
   };
 
-  const handleApplyTemplate = (s) => {
+  const handleApplyTemplate = (t) => {
+    const s = t.settings;
     setIntervalSpeak(s.intervalSpeak ?? true);
     setIntervalVal(s.intervalVal || 30000);
+    setActiveTemplateName(t.name);
   };
 
   const swRef = useRef(null);
@@ -154,7 +157,7 @@ export default function StopwatchTab() {
         title="Time"
         initialSeconds={Math.floor(intervalVal / 1000)}
         onClose={() => setIsPickerOpen(false)}
-        onSave={(val) => setIntervalVal(val * 1000)}
+        onSave={(val) => { setIntervalVal(val * 1000); setActiveTemplateName(""); }}
       />
       <TemplatesModal
         isOpen={isTemplatesOpen}
@@ -167,6 +170,11 @@ export default function StopwatchTab() {
         <button onClick={() => setIsTemplatesOpen(true)}><Bookmark size={20} /></button>
       </div>
       <div className="display-container">
+        {activeTemplateName && (
+          <div style={{ position: 'absolute', top: '15px', color: 'var(--stopwatch-color)', fontSize: '0.9rem', fontWeight: 'bold' }}>
+            ★ {activeTemplateName}
+          </div>
+        )}
         <div className="time-display">
           <span>{h}</span><span className="colon">:</span>
           <span>{m}</span><span className="colon">:</span>
@@ -180,7 +188,7 @@ export default function StopwatchTab() {
       <div className="settings-panel">
         <div className="setting-row">
           <label className="checkbox-label">
-            <input type="checkbox" checked={intervalSpeak} onChange={e => setIntervalSpeak(e.target.checked)} />
+            <input type="checkbox" checked={intervalSpeak} onChange={e => { setIntervalSpeak(e.target.checked); setActiveTemplateName(""); }} />
             <span className="custom-checkbox pink-check"><Check size={14} /></span> Interval
           </label>
           <button 

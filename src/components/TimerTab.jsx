@@ -17,18 +17,21 @@ export default function TimerTab() {
 
   const [pickerConfig, setPickerConfig] = useState({ isOpen: false, type: null, initialVal: 0 });
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [activeTemplateName, setActiveTemplateName] = useState("");
 
   const currentSettings = {
     seconds, preCountdown, intervalSpeak, intervalVal, countdownSpeak, countdownVal
   };
 
-  const handleApplyTemplate = (s) => {
+  const handleApplyTemplate = (t) => {
+    const s = t.settings;
     setSeconds(s.seconds || 0);
     setPreCountdown(s.preCountdown ?? 0);
     setIntervalSpeak(s.intervalSpeak ?? true);
     setIntervalVal(s.intervalVal || 60);
     setCountdownSpeak(s.countdownSpeak ?? true);
     setCountdownVal(s.countdownVal || 10);
+    setActiveTemplateName(t.name);
   };
 
   const timerRef = useRef(null);
@@ -112,6 +115,7 @@ export default function TimerTab() {
   const addTime = (addSec) => {
     if (!isRunning) {
       setSeconds(prev => prev + addSec);
+      setActiveTemplateName("");
     }
   };
 
@@ -132,6 +136,7 @@ export default function TimerTab() {
   const handleSavePicker = (val) => {
     if (pickerConfig.type === 'interval') setIntervalVal(val);
     else if (pickerConfig.type === 'countdown') setCountdownVal(val);
+    setActiveTemplateName("");
   };
 
   return (
@@ -159,6 +164,11 @@ export default function TimerTab() {
       </div>
       
       <div className="display-container">
+        {activeTemplateName && (
+          <div style={{ position: 'absolute', top: '15px', color: 'var(--timer-color)', fontSize: '0.9rem', fontWeight: 'bold' }}>
+            ★ {activeTemplateName}
+          </div>
+        )}
         <div className="time-display">
           <span>{String(h).padStart(2, '0')}</span><span className="colon">:</span>
           <span>{String(m).padStart(2, '0')}</span><span className="colon">:</span>
@@ -172,7 +182,7 @@ export default function TimerTab() {
       <div className="settings-panel">
         <div className="setting-row">
           <label>Countdown before starting</label>
-          <select value={preCountdown} onChange={e => setPreCountdown(Number(e.target.value))}>
+          <select value={preCountdown} onChange={e => { setPreCountdown(Number(e.target.value)); setActiveTemplateName(""); }}>
             <option value="0">0s</option>
             <option value="3">3s</option>
             <option value="5">5s</option>
@@ -182,7 +192,7 @@ export default function TimerTab() {
         </div>
         <div className="setting-row">
           <label className="checkbox-label">
-            <input type="checkbox" checked={intervalSpeak} onChange={e => setIntervalSpeak(e.target.checked)} />
+            <input type="checkbox" checked={intervalSpeak} onChange={e => { setIntervalSpeak(e.target.checked); setActiveTemplateName(""); }} />
             <span className="custom-checkbox"><Check size={14} /></span> Interval
           </label>
           <button 
@@ -193,14 +203,14 @@ export default function TimerTab() {
             {formatShortTime(intervalVal)} <span style={{fontSize: '0.7em'}}>▼</span>
           </button>
           <label className="checkbox-label" style={{marginLeft: 'auto'}}>
-            <input type="checkbox" checked={intervalSpeak} onChange={e => setIntervalSpeak(e.target.checked)} />
+            <input type="checkbox" checked={intervalSpeak} onChange={e => { setIntervalSpeak(e.target.checked); setActiveTemplateName(""); }} />
             <span className="custom-checkbox"><Check size={14} /></span> Speaking
           </label>
           <button className="icon-btn"><BellOff size={16} /></button>
         </div>
         <div className="setting-row">
           <label className="checkbox-label">
-            <input type="checkbox" checked={countdownSpeak} onChange={e => setCountdownSpeak(e.target.checked)} />
+            <input type="checkbox" checked={countdownSpeak} onChange={e => { setCountdownSpeak(e.target.checked); setActiveTemplateName(""); }} />
             <span className="custom-checkbox"><Check size={14} /></span> Countdown
           </label>
           <button 

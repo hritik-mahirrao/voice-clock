@@ -31,14 +31,16 @@ export default function TemplatesModal({ isOpen, onClose, type, currentSettings,
       settings: currentSettings
     };
     saveTemplates([...templates, newTemplate]);
+    if (onApply) onApply(newTemplate);
+    onClose();
   };
 
   const handleRemove = (id) => {
     saveTemplates(templates.filter(t => t.id !== id));
   };
 
-  const handleApply = (settings) => {
-    onApply(settings);
+  const handleApply = (t) => {
+    onApply(t);
     onClose();
   };
 
@@ -104,7 +106,7 @@ export default function TemplatesModal({ isOpen, onClose, type, currentSettings,
                     <div style={{flex: 1, display: 'flex', alignItems: 'center', gap: '10px'}}>
                       <span 
                         style={{cursor: 'pointer', flex: 1, fontWeight: '600'}} 
-                        onClick={() => handleApply(t.settings)}
+                        onClick={() => handleApply(t)}
                       >
                         {t.name}
                       </span>
