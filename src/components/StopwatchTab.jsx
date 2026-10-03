@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Check } from 'lucide-react';
 import { speak, formatSpeechTime } from '../utils/speech';
+import TimePickerModal from './TimePickerModal';
 
 export default function StopwatchTab() {
   const [ms, setMs] = useState(0);
@@ -13,6 +14,8 @@ export default function StopwatchTab() {
   const [intervalVal, setIntervalVal] = useState(30000); // ms
   const [speakLapTime, setSpeakLapTime] = useState(true);
   const [speakLapTotal, setSpeakLapTotal] = useState(false);
+
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const swRef = useRef(null);
   const nextTargetRef = useRef(30000);
@@ -80,8 +83,25 @@ export default function StopwatchTab() {
 
   const { h, m, s, ms: msStr } = formatDisplay(ms);
 
+  const formatShortTime = (milli) => {
+    const seconds = Math.floor(milli / 1000);
+    if (seconds === 0) return "0s";
+    const ms = Math.floor(seconds / 60);
+    const ss = seconds % 60;
+    if (ms > 0 && ss > 0) return `${ms}m ${ss}s`;
+    if (ms > 0) return `${ms}m`;
+    return `${ss}s`;
+  };
+
   return (
     <section className="tab-content pink-theme">
+      <TimePickerModal 
+        isOpen={isPickerOpen}
+        title="Time"
+        initialSeconds={Math.floor(intervalVal / 1000)}
+        onClose={() => setIsPickerOpen(false)}
+        onSave={(val) => setIntervalVal(val * 1000)}
+      />
       <div className="display-container">
         <div className="time-display">
           <span>{h}</span><span className="colon">:</span>
@@ -99,11 +119,13 @@ export default function StopwatchTab() {
             <input type="checkbox" checked={intervalSpeak} onChange={e => setIntervalSpeak(e.target.checked)} />
             <span className="custom-checkbox pink-check"><Check size={14} /></span> Interval
           </label>
-          <select value={intervalVal} onChange={e => setIntervalVal(Number(e.target.value))}>
-            <option value="10000">10s</option>
-            <option value="30000">30s</option>
-            <option value="60000">60s</option>
-          </select>
+          <button 
+            className="text-btn" 
+            style={{background: 'var(--btn-bg)', padding: '5px 10px', borderRadius: '5px', border: '1px solid #444', fontSize: '0.9rem'}}
+            onClick={() => setIsPickerOpen(true)}
+          >
+            {formatShortTime(intervalVal)} <span style={{fontSize: '0.7em'}}>▼</span>
+          </button>
           <label className="checkbox-label">
             <input type="checkbox" checked={intervalSpeak} onChange={e => setIntervalSpeak(e.target.checked)} />
             <span className="custom-checkbox pink-check"><Check size={14} /></span> Speaking

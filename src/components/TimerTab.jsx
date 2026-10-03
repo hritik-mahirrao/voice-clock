@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Volume2, Palette, Type, Settings, BellOff, List, Play, Pause, RotateCcw, Check } from 'lucide-react';
+import { Play, Pause, RotateCcw, Check, List, Volume2, Palette, Type, Settings, BellOff } from 'lucide-react';
 import { speak, formatSpeechTime } from '../utils/speech';
+import TimePickerModal from './TimePickerModal';
 
 export default function TimerTab() {
   const [seconds, setSeconds] = useState(0);
@@ -12,6 +13,8 @@ export default function TimerTab() {
   const [intervalVal, setIntervalVal] = useState(60);
   const [countdownSpeak, setCountdownSpeak] = useState(true);
   const [countdownVal, setCountdownVal] = useState(10);
+
+  const [pickerConfig, setPickerConfig] = useState({ isOpen: false, type: null, initialVal: 0 });
 
   const timerRef = useRef(null);
 
@@ -65,8 +68,29 @@ export default function TimerTab() {
     setSeconds(0);
   };
 
+  const formatShortTime = (seconds) => {
+    if (seconds === 0) return "0s";
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    if (m > 0 && s > 0) return `${m}m ${s}s`;
+    if (m > 0) return `${m}m`;
+    return `${s}s`;
+  };
+
+  const handleSavePicker = (val) => {
+    if (pickerConfig.type === 'interval') setIntervalVal(val);
+    else if (pickerConfig.type === 'countdown') setCountdownVal(val);
+  };
+
   return (
     <section className="tab-content blue-theme">
+      <TimePickerModal 
+        isOpen={pickerConfig.isOpen}
+        title="Time"
+        initialSeconds={pickerConfig.initialVal}
+        onClose={() => setPickerConfig({ ...pickerConfig, isOpen: false })}
+        onSave={handleSavePicker}
+      />
       <div className="toolbar">
         <button><Volume2 size={20} /></button>
         <button className="active-blue"><Palette size={20} /></button>
@@ -101,11 +125,13 @@ export default function TimerTab() {
             <input type="checkbox" checked={intervalSpeak} onChange={e => setIntervalSpeak(e.target.checked)} />
             <span className="custom-checkbox"><Check size={14} /></span> Interval
           </label>
-          <select value={intervalVal} onChange={e => setIntervalVal(Number(e.target.value))}>
-            <option value="30">30s</option>
-            <option value="60">60s</option>
-            <option value="300">5m</option>
-          </select>
+          <button 
+            className="text-btn" 
+            style={{background: 'var(--btn-bg)', padding: '5px 10px', borderRadius: '5px', border: '1px solid #444', fontSize: '0.9rem'}}
+            onClick={() => setPickerConfig({ isOpen: true, type: 'interval', initialVal: intervalVal })}
+          >
+            {formatShortTime(intervalVal)} <span style={{fontSize: '0.7em'}}>▼</span>
+          </button>
           <label className="checkbox-label" style={{marginLeft: 'auto'}}>
             <input type="checkbox" checked={intervalSpeak} onChange={e => setIntervalSpeak(e.target.checked)} />
             <span className="custom-checkbox"><Check size={14} /></span> Speaking
@@ -117,10 +143,13 @@ export default function TimerTab() {
             <input type="checkbox" checked={countdownSpeak} onChange={e => setCountdownSpeak(e.target.checked)} />
             <span className="custom-checkbox"><Check size={14} /></span> Countdown
           </label>
-          <select value={countdownVal} onChange={e => setCountdownVal(Number(e.target.value))}>
-            <option value="5">5s</option>
-            <option value="10">10s</option>
-          </select>
+          <button 
+            className="text-btn" 
+            style={{background: 'var(--btn-bg)', padding: '5px 10px', borderRadius: '5px', border: '1px solid #444', fontSize: '0.9rem'}}
+            onClick={() => setPickerConfig({ isOpen: true, type: 'countdown', initialVal: countdownVal })}
+          >
+            {formatShortTime(countdownVal)} <span style={{fontSize: '0.7em'}}>▼</span>
+          </button>
           <label className="checkbox-label" style={{marginLeft: 'auto'}}>
             <input type="checkbox" checked={countdownSpeak} onChange={e => setCountdownSpeak(e.target.checked)} />
             <span className="custom-checkbox"><Check size={14} /></span> Speaking

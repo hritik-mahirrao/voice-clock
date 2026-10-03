@@ -546,3 +546,54 @@ select {
   justify-content: flex-end;
   gap: 20px;
 }
+
+/* Time Picker Modal Styles */
+.time-picker-modal {
+  max-width: 320px;
+}
+
+.picker-body {
+  padding: 10px 20px 30px;
+}
+
+.picker-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.picker-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 1.5rem;
+  width: 60px;
+}
+
+.picker-item {
+  width: 100%;
+  text-align: center;
+  padding: 10px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.picker-item.prev, .picker-item.next {
+  color: #777;
+  font-size: 1.2rem;
+}
+
+.picker-item.current {
+  color: var(--text-main);
+  border-top: 1px solid #777;
+  border-bottom: 1px solid #777;
+  font-weight: 600;
+}
+
+.picker-label {
+  font-size: 1rem;
+  color: var(--text-muted);
+  align-self: center;
+  margin-top: -5px; /* align roughly with the current item */
+}
