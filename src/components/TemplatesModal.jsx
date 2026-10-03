@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bookmark, Plus, X, Edit2, Check } from 'lucide-react';
+import { Bookmark, Plus, X, Edit2, Check, Save } from 'lucide-react';
 
 export default function TemplatesModal({ isOpen, onClose, type, currentSettings, onApply, templates, setTemplates, activeTemplateId }) {
   const [editingId, setEditingId] = useState(null);
@@ -32,6 +32,12 @@ export default function TemplatesModal({ isOpen, onClose, type, currentSettings,
   const handleApply = (t) => {
     onApply(t);
     onClose();
+  };
+
+  const handleOverwrite = (id) => {
+    const updated = templates.map(t => t.id === id ? { ...t, settings: currentSettings } : t);
+    saveTemplates(updated);
+    if (onApply) onApply(updated.find(t => t.id === id));
   };
 
   const startRename = (template) => {
@@ -100,7 +106,8 @@ export default function TemplatesModal({ isOpen, onClose, type, currentSettings,
                       >
                         {activeTemplateId === t.id ? '★ ' : ''}{t.name}
                       </span>
-                      <button className="icon-btn" onClick={() => startRename(t)}><Edit2 size={16} /></button>
+                      <button className="icon-btn" onClick={() => handleOverwrite(t.id)} title="Update with current settings"><Save size={16} /></button>
+                      <button className="icon-btn" onClick={() => startRename(t)} title="Rename"><Edit2 size={16} /></button>
                     </div>
                   )}
                   
