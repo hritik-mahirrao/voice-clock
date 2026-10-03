@@ -601,6 +601,29 @@ select {
   margin-top: -5px; /* align roughly with the current item */
 }
 
+.picker-input {
+  background: transparent;
+  border: none;
+  border-top: 1px solid #777;
+  border-bottom: 1px solid #777;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  width: 100%;
+  padding: 10px 0;
+}
+.picker-input::-webkit-outer-spin-button,
+.picker-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.picker-input[type=number] {
+  -moz-appearance: textfield;
+}
+
 @media (max-height: 700px) {
   .time-display, .pink-theme .time-display {
     font-size: 3.8rem;
