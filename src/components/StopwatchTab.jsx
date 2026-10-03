@@ -15,6 +15,7 @@ export default function StopwatchTab() {
   const [intervalVal, setIntervalVal] = useState(30000); // ms
   const [speakLapTime, setSpeakLapTime] = useState(true);
   const [speakLapTotal, setSpeakLapTotal] = useState(false);
+  const [voiceNote, setVoiceNote] = useState("");
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
@@ -27,7 +28,8 @@ export default function StopwatchTab() {
 
   const currentSettings = {
     intervalSpeak,
-    intervalVal
+    intervalVal,
+    voiceNote
   };
 
   const isMatch = (tSettings, current) => {
@@ -39,7 +41,7 @@ export default function StopwatchTab() {
     const s = t.settings;
     setIntervalSpeak(s.intervalSpeak ?? true);
     setIntervalVal(s.intervalVal || 30000);
-    setActiveTemplateName(t.name);
+    setVoiceNote(s.voiceNote || "");
   };
 
   const swRef = useRef(null);
@@ -81,7 +83,11 @@ export default function StopwatchTab() {
         if (intervalSpeak && intervalVal > 0) {
           const currentIntervalTarget = Math.floor(currentMs / intervalVal) * intervalVal;
           if (currentIntervalTarget > 0 && currentIntervalTarget !== lastSpokenInterval && currentMs >= currentIntervalTarget) {
-            speak(formatSpeechTime(Math.floor(currentIntervalTarget / 1000)));
+            let msg = formatSpeechTime(Math.floor(currentIntervalTarget / 1000));
+            if (voiceNote.trim()) {
+              msg += ". " + voiceNote.trim();
+            }
+            speak(msg);
             lastSpokenInterval = currentIntervalTarget;
           }
         }
@@ -199,6 +205,16 @@ export default function StopwatchTab() {
       </div>
 
       <div className="settings-panel">
+        <div className="setting-row">
+          <label>Voice Note</label>
+          <input 
+            type="text" 
+            placeholder="e.g. Keep your core tight" 
+            value={voiceNote} 
+            onChange={e => setVoiceNote(e.target.value)}
+            style={{flex: 1, background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', marginLeft: '10px', fontFamily: 'inherit'}}
+          />
+        </div>
         <div className="setting-row">
           <label className="checkbox-label">
             <input type="checkbox" checked={intervalSpeak} onChange={e => setIntervalSpeak(e.target.checked)} />

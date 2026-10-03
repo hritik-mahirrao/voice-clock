@@ -14,6 +14,7 @@ export default function TimerTab() {
   const [intervalVal, setIntervalVal] = useState(60);
   const [countdownSpeak, setCountdownSpeak] = useState(true);
   const [countdownVal, setCountdownVal] = useState(10);
+  const [voiceNote, setVoiceNote] = useState("");
 
   const [pickerConfig, setPickerConfig] = useState({ isOpen: false, type: null, initialVal: 0 });
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
@@ -25,7 +26,7 @@ export default function TimerTab() {
   }, []);
 
   const currentSettings = {
-    seconds, preCountdown, intervalSpeak, intervalVal, countdownSpeak, countdownVal
+    seconds, preCountdown, intervalSpeak, intervalVal, countdownSpeak, countdownVal, voiceNote
   };
 
   const isMatch = (tSettings, current) => {
@@ -41,6 +42,7 @@ export default function TimerTab() {
     setIntervalVal(s.intervalVal || 60);
     setCountdownSpeak(s.countdownSpeak ?? true);
     setCountdownVal(s.countdownVal || 10);
+    setVoiceNote(s.voiceNote || "");
   };
 
   const timerRef = useRef(null);
@@ -94,7 +96,11 @@ export default function TimerTab() {
         
         if (intervalSpeak && remainingSec > 0 && remainingSec % intervalVal === 0) {
           if (lastSpokenInterval !== remainingSec) {
-            speak(formatSpeechTime(remainingSec) + " left");
+            let msg = formatSpeechTime(remainingSec) + " left";
+            if (voiceNote.trim()) {
+              msg += ". " + voiceNote.trim();
+            }
+            speak(msg);
             lastSpokenInterval = remainingSec;
           }
         }
@@ -190,6 +196,16 @@ export default function TimerTab() {
       </div>
 
       <div className="settings-panel">
+        <div className="setting-row">
+          <label>Voice Note</label>
+          <input 
+            type="text" 
+            placeholder="e.g. Keep your core tight" 
+            value={voiceNote} 
+            onChange={e => setVoiceNote(e.target.value)}
+            style={{flex: 1, background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', marginLeft: '10px', fontFamily: 'inherit'}}
+          />
+        </div>
         <div className="setting-row">
           <label>Countdown before starting</label>
           <select value={preCountdown} onChange={e => setPreCountdown(Number(e.target.value))}>
