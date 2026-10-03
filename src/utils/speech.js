@@ -1,13 +1,17 @@
 export const getSpeechSettings = () => {
   return {
     rate: parseFloat(localStorage.getItem('speechRate') || '1'),
-    pitch: parseFloat(localStorage.getItem('speechPitch') || '1')
+    pitch: parseFloat(localStorage.getItem('speechPitch') || '1'),
+    voiceURI: localStorage.getItem('speechVoiceURI') || ''
   };
 };
 
-export const setSpeechSettings = (rate, pitch) => {
+export const setSpeechSettings = (rate, pitch, voiceURI) => {
   localStorage.setItem('speechRate', rate);
   localStorage.setItem('speechPitch', pitch);
+  if (voiceURI) {
+    localStorage.setItem('speechVoiceURI', voiceURI);
+  }
 };
 
 export const speak = (text) => {
@@ -19,6 +23,17 @@ export const speak = (text) => {
   const settings = getSpeechSettings();
   utterThis.rate = settings.rate;
   utterThis.pitch = settings.pitch;
+  
+  const voices = synth.getVoices();
+  if (voices.length > 0) {
+    let selectedVoice = voices.find(v => v.voiceURI === settings.voiceURI);
+    if (!selectedVoice) {
+      // Auto-select a realistic voice if possible
+      selectedVoice = voices.find(v => v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Premium')) || voices[0];
+    }
+    utterThis.voice = selectedVoice;
+  }
+
   synth.speak(utterThis);
 };
 

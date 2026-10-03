@@ -1,20 +1,29 @@
-import { useState } from 'react';
-import { Volume2, RotateCcw, Activity, Droplet, Play } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Volume2, RotateCcw, Activity, Droplet, Play, Mic } from 'lucide-react';
 import { getSpeechSettings, setSpeechSettings, speak } from '../utils/speech';
 
 export default function SpeechSettingsModal({ isOpen, onClose }) {
   const [settings, setSettings] = useState(getSpeechSettings());
+  const [voices, setVoices] = useState([]);
+
+  useEffect(() => {
+    const loadVoices = () => {
+      setVoices(window.speechSynthesis.getVoices());
+    };
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }, []);
 
   if (!isOpen) return null;
 
   const handleReset = () => {
-    const defaultSettings = { rate: 1, pitch: 1 };
+    const defaultSettings = { rate: 1, pitch: 1, voiceURI: '' };
     setSettings(defaultSettings);
-    setSpeechSettings(1, 1);
+    setSpeechSettings(1, 1, '');
   };
 
   const handleSave = () => {
-    setSpeechSettings(settings.rate, settings.pitch);
+    setSpeechSettings(settings.rate, settings.pitch, settings.voiceURI);
     speak("Settings saved");
     onClose();
   };
@@ -27,6 +36,10 @@ export default function SpeechSettingsModal({ isOpen, onClose }) {
     const utterThis = new SpeechSynthesisUtterance("1, 2, 3");
     utterThis.rate = settings.rate;
     utterThis.pitch = settings.pitch;
+    if (settings.voiceURI && voices.length > 0) {
+      const selected = voices.find(v => v.voiceURI === settings.voiceURI);
+      if (selected) utterThis.voice = selected;
+    }
     synth.speak(utterThis);
   };
 
@@ -44,6 +57,28 @@ export default function SpeechSettingsModal({ isOpen, onClose }) {
         </div>
 
         <div className="modal-body">
+          <div className="slider-group">
+            <label>Voice / Accent</label>
+            <div className="slider-row" style={{marginBottom: '15px'}}>
+              <Mic size={20} color="var(--text-muted)" />
+              <select 
+                value={settings.voiceURI}
+                onChange={(e) => {
+                  setSettings({...settings, voiceURI: e.target.value});
+                  setTimeout(() => handlePreview(), 100);
+                }}
+                style={{flex: 1, background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', fontFamily: 'inherit'}}
+              >
+                <option value="">Default (Auto-select Best)</option>
+                {voices.map(v => (
+                  <option key={v.voiceURI} value={v.voiceURI}>
+                    {v.name} ({v.lang})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div className="slider-group">
             <label>Speed Of Speech</label>
             <div className="slider-row">
