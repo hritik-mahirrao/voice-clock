@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Check, Bookmark } from 'lucide-react';
+import { Play, Pause, Check, Bookmark, X } from 'lucide-react';
 import { speak, formatSpeechTime } from '../utils/speech';
 import TimePickerModal from './TimePickerModal';
 import TemplatesModal from './TemplatesModal';
@@ -57,6 +57,12 @@ export default function StopwatchTab() {
     setTemplates(updatedTemplates);
     localStorage.setItem('voiceClock_stopwatchTemplates', JSON.stringify(updatedTemplates));
     setEditingTemplateId(null);
+  };
+
+  const handleResetToDefault = () => {
+    setIntervalSpeak(true);
+    setIntervalVal(30000);
+    setVoiceNote("");
   };
 
   const swRef = useRef(null);
@@ -201,24 +207,29 @@ export default function StopwatchTab() {
         activeTemplateId={activeTemplate?.id}
         onEditSettings={handleEditSettings}
       />
-      <div className="toolbar" style={{justifyContent: 'flex-start'}}>
-        <button onClick={() => setIsTemplatesOpen(true)}><Bookmark size={20} /></button>
-      </div>
-      <div className="display-container">
-        {editingTemplateId && (
-          <div style={{ position: 'absolute', top: '10px', left: '10px', right: '10px', background: 'var(--stopwatch-color)', padding: '10px', borderRadius: '8px', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white', fontWeight: 'bold' }}>
-            <span>Editing Template</span>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setEditingTemplateId(null)} style={{ background: 'rgba(0,0,0,0.3)', border: 'none', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-              <button onClick={handleUpdateTemplate} style={{ background: 'white', border: 'none', color: 'var(--stopwatch-color)', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontFamily: 'inherit' }}>Update</button>
+      {editingTemplateId ? (
+        <div style={{ background: 'var(--stopwatch-color)', padding: '10px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white', fontWeight: 'bold' }}>
+          <span>Editing Template</span>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={() => setEditingTemplateId(null)} style={{ background: 'rgba(0,0,0,0.3)', border: 'none', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+            <button onClick={handleUpdateTemplate} style={{ background: 'white', border: 'none', color: 'var(--stopwatch-color)', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontFamily: 'inherit' }}>Update</button>
+          </div>
+        </div>
+      ) : (
+        <div className="toolbar" style={{justifyContent: 'flex-start', alignItems: 'center'}}>
+          <button onClick={() => setIsTemplatesOpen(true)}><Bookmark size={20} /></button>
+          
+          {activeTemplate && (
+            <div style={{ color: 'var(--stopwatch-color)', fontSize: '0.9rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px', marginLeft: '10px' }}>
+              <span>★ {activeTemplate.name}</span>
+              <button onClick={handleResetToDefault} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                <X size={14} />
+              </button>
             </div>
-          </div>
-        )}
-        {!editingTemplateId && activeTemplate && (
-          <div style={{ position: 'absolute', top: '15px', color: 'var(--stopwatch-color)', fontSize: '0.9rem', fontWeight: 'bold' }}>
-            ★ {activeTemplate.name}
-          </div>
-        )}
+          )}
+        </div>
+      )}
+      <div className="display-container">
         <div className="time-display">
           <span>{h}</span><span className="colon">:</span>
           <span>{m}</span><span className="colon">:</span>

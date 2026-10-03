@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Check, List, Volume2, Palette, Type, Settings, BellOff, Bookmark } from 'lucide-react';
+import { Play, Pause, RotateCcw, Check, List, Volume2, Palette, Type, Settings, BellOff, Bookmark, X } from 'lucide-react';
 import { speak, formatSpeechTime } from '../utils/speech';
 import TimePickerModal from './TimePickerModal';
 import TemplatesModal from './TemplatesModal';
@@ -58,6 +58,16 @@ export default function TimerTab() {
     setTemplates(updatedTemplates);
     localStorage.setItem('voiceClock_timerTemplates', JSON.stringify(updatedTemplates));
     setEditingTemplateId(null);
+  };
+
+  const handleResetToDefault = () => {
+    setSeconds(0);
+    setPreCountdown(0);
+    setIntervalSpeak(true);
+    setIntervalVal(60);
+    setCountdownSpeak(true);
+    setCountdownVal(10);
+    setVoiceNote("");
   };
 
   const timerRef = useRef(null);
@@ -187,29 +197,37 @@ export default function TimerTab() {
         activeTemplateId={activeTemplate?.id}
         onEditSettings={handleEditSettings}
       />
-      <div className="toolbar">
-        <button onClick={() => setIsTemplatesOpen(true)}><Bookmark size={20} /></button>
-        <button><Volume2 size={20} /></button>
-        <button className="active-blue"><Palette size={20} /></button>
-        <button><Type size={20} /></button>
-        <button><Settings size={20} /></button>
-      </div>
+      {editingTemplateId ? (
+        <div style={{ background: 'var(--timer-color)', padding: '10px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white', fontWeight: 'bold' }}>
+          <span>Editing Template</span>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={() => setEditingTemplateId(null)} style={{ background: 'rgba(0,0,0,0.3)', border: 'none', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+            <button onClick={handleUpdateTemplate} style={{ background: 'white', border: 'none', color: 'var(--timer-color)', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontFamily: 'inherit' }}>Update</button>
+          </div>
+        </div>
+      ) : (
+        <div className="toolbar" style={{justifyContent: 'flex-start', alignItems: 'center'}}>
+          <button onClick={() => setIsTemplatesOpen(true)}><Bookmark size={20} /></button>
+          
+          {activeTemplate && (
+            <div style={{ color: 'var(--timer-color)', fontSize: '0.9rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px', marginLeft: '10px' }}>
+              <span>★ {activeTemplate.name}</span>
+              <button onClick={handleResetToDefault} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          <div style={{marginLeft: 'auto', display: 'flex', gap: '15px'}}>
+            <button><Volume2 size={20} /></button>
+            <button className="active-blue"><Palette size={20} /></button>
+            <button><Type size={20} /></button>
+            <button><Settings size={20} /></button>
+          </div>
+        </div>
+      )}
       
       <div className="display-container">
-        {editingTemplateId && (
-          <div style={{ position: 'absolute', top: '10px', left: '10px', right: '10px', background: 'var(--timer-color)', padding: '10px', borderRadius: '8px', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white', fontWeight: 'bold' }}>
-            <span>Editing Template</span>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setEditingTemplateId(null)} style={{ background: 'rgba(0,0,0,0.3)', border: 'none', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-              <button onClick={handleUpdateTemplate} style={{ background: 'white', border: 'none', color: 'var(--timer-color)', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontFamily: 'inherit' }}>Update</button>
-            </div>
-          </div>
-        )}
-        {!editingTemplateId && activeTemplate && (
-          <div style={{ position: 'absolute', top: '15px', color: 'var(--timer-color)', fontSize: '0.9rem', fontWeight: 'bold' }}>
-            ★ {activeTemplate.name}
-          </div>
-        )}
         <div className="time-display">
           <span>{String(h).padStart(2, '0')}</span><span className="colon">:</span>
           <span>{String(m).padStart(2, '0')}</span><span className="colon">:</span>
