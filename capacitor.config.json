@@ -1,0 +1,10 @@
+{
+  "appId": "com.voiceclock.app",
+  "appName": "Voice Clock",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://voice-clock.vercel.app",
+    "cleartext": true
+  }
+}
