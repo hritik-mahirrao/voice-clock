@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, Check, List, Volume2, Palette, Type, Settings, BellOff, Bookmark, X } from 'lucide-react';
 import { speak, formatSpeechTime } from '../utils/speech';
+import { setTimerBackgroundState } from '../utils/background';
 import TimePickerModal from './TimePickerModal';
 import TemplatesModal from './TemplatesModal';
 
@@ -170,6 +171,11 @@ export default function TimerTab() {
       releaseWakeLock();
     };
   }, [isRunning, intervalSpeak, intervalVal, countdownSpeak, countdownVal]);
+
+  useEffect(() => {
+    const formatted = formatShortTime(seconds);
+    setTimerBackgroundState(isRunning, formatted);
+  }, [isRunning, seconds]);
 
   const toggleTimer = () => {
     if (seconds <= 0) return;

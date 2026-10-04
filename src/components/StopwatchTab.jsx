@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Check, Bookmark, X } from 'lucide-react';
 import { speak, formatSpeechTime } from '../utils/speech';
+import { setStopwatchBackgroundState } from '../utils/background';
 import TimePickerModal from './TimePickerModal';
 import TemplatesModal from './TemplatesModal';
 
@@ -163,6 +164,16 @@ export default function StopwatchTab() {
       releaseWakeLock();
     };
   }, [isRunning, intervalSpeak, intervalVal]);
+
+  useEffect(() => {
+    // Only update notification roughly once per second to avoid spamming the Android UI thread
+    const hPart = Math.floor(ms / 3600000);
+    const mPart = Math.floor((ms / 60000) % 60);
+    const sPart = Math.floor((ms / 1000) % 60);
+    const formatted = `${hPart > 0 ? hPart + 'h ' : ''}${mPart > 0 ? mPart + 'm ' : ''}${sPart}s`;
+    
+    setStopwatchBackgroundState(isRunning, formatted);
+  }, [isRunning, Math.floor(ms / 1000)]);
 
   const toggleSw = () => {
     if (!isRunning && ms === 0) {

@@ -2,5 +2,8 @@
 include ':capacitor-android'
 project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')
 
+include ':anuradev-capacitor-background-mode'
+project(':anuradev-capacitor-background-mode').projectDir = new File('../node_modules/@anuradev/capacitor-background-mode/android')
+
 include ':capacitor-community-text-to-speech'
 project(':capacitor-community-text-to-speech').projectDir = new File('../node_modules/@capacitor-community/text-to-speech/android')
