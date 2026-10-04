@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Voice Clock</title>
+    <script>
+      window.addEventListener('error', function(e) {
+        document.body.innerHTML += '<div style="color:red; background:white; padding:20px; position:absolute; z-index:9999; top:0; left:0; right:0; font-family:monospace; font-size:12px; word-wrap:break-word;">Error: ' + e.message + '<br>' + e.filename + ':' + e.lineno + ':' + e.colno + '<br>' + (e.error ? e.error.stack : '') + '</div>';
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        document.body.innerHTML += '<div style="color:red; background:white; padding:20px; position:absolute; z-index:9999; top:0; left:0; right:0; font-family:monospace; font-size:12px; word-wrap:break-word;">Promise Rejection: ' + e.reason + '</div>';
+      });
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   </head>
   <body>

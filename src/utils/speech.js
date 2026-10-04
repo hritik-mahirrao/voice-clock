@@ -1,3 +1,5 @@
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
+
 export const getSpeechSettings = () => {
   return {
     rate: parseFloat(localStorage.getItem('speechRate') || '1'),
@@ -14,27 +16,27 @@ export const setSpeechSettings = (rate, pitch, voiceURI) => {
   }
 };
 
-export const speak = (text) => {
-  const synth = window.speechSynthesis;
-  if (synth.speaking) {
-      synth.cancel();
-  }
-  const utterThis = new SpeechSynthesisUtterance(text);
-  const settings = getSpeechSettings();
-  utterThis.rate = settings.rate;
-  utterThis.pitch = settings.pitch;
-  
-  const voices = synth.getVoices();
-  if (voices.length > 0) {
-    let selectedVoice = voices.find(v => v.voiceURI === settings.voiceURI);
-    if (!selectedVoice) {
-      // Auto-select a realistic voice if possible
-      selectedVoice = voices.find(v => v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Premium')) || voices[0];
+export const speak = async (text) => {
+  try {
+    await TextToSpeech.stop();
+    const settings = getSpeechSettings();
+    
+    // We only pass voiceURI if it's not empty, but capacitor plugin uses it directly if we want?
+    // Wait, let's just let it play standard text to speech.
+    let speakOptions = {
+      text: text,
+      rate: settings.rate,
+      pitch: settings.pitch,
+    };
+    
+    if (settings.voiceURI !== '') {
+      speakOptions.voice = parseInt(settings.voiceURI, 10);
     }
-    utterThis.voice = selectedVoice;
+    
+    await TextToSpeech.speak(speakOptions);
+  } catch (e) {
+    console.error("Speech failed:", e);
   }
-
-  synth.speak(utterThis);
 };
 
 export const formatSpeechTime = (totalSeconds) => {

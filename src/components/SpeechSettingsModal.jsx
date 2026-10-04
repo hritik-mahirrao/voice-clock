@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Volume2, RotateCcw, Activity, Droplet, Play, Mic } from 'lucide-react';
 import { getSpeechSettings, setSpeechSettings, speak } from '../utils/speech';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
 export default function SpeechSettingsModal({ isOpen, onClose }) {
   const [settings, setSettings] = useState(getSpeechSettings());
   const [voices, setVoices] = useState([]);
 
   useEffect(() => {
-    const loadVoices = () => {
-      setVoices(window.speechSynthesis.getVoices());
+    const loadVoices = async () => {
+      try {
+        const result = await TextToSpeech.getSupportedVoices();
+        setVoices(result.voices || []);
+      } catch (e) {
+        console.error("Failed to load voices", e);
+      }
     };
     loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
   }, []);
 
   if (!isOpen) return null;
@@ -28,19 +33,21 @@ export default function SpeechSettingsModal({ isOpen, onClose }) {
     onClose();
   };
 
-  const handlePreview = () => {
-    const synth = window.speechSynthesis;
-    if (synth.speaking) {
-        synth.cancel();
+  const handlePreview = async () => {
+    try {
+      await TextToSpeech.stop();
+      let speakOptions = {
+        text: "1, 2, 3",
+        rate: settings.rate,
+        pitch: settings.pitch,
+      };
+      if (settings.voiceURI !== '') {
+        speakOptions.voice = parseInt(settings.voiceURI, 10);
+      }
+      await TextToSpeech.speak(speakOptions);
+    } catch (e) {
+      console.error("Preview failed:", e);
     }
-    const utterThis = new SpeechSynthesisUtterance("1, 2, 3");
-    utterThis.rate = settings.rate;
-    utterThis.pitch = settings.pitch;
-    if (settings.voiceURI && voices.length > 0) {
-      const selected = voices.find(v => v.voiceURI === settings.voiceURI);
-      if (selected) utterThis.voice = selected;
-    }
-    synth.speak(utterThis);
   };
 
   return (
@@ -70,8 +77,8 @@ export default function SpeechSettingsModal({ isOpen, onClose }) {
                 style={{flex: 1, background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', fontFamily: 'inherit'}}
               >
                 <option value="">Default (Auto-select Best)</option>
-                {voices.map(v => (
-                  <option key={v.voiceURI} value={v.voiceURI}>
+                {voices.map((v, i) => (
+                  <option key={v.voiceURI} value={i}>
                     {v.name} ({v.lang})
                   </option>
                 ))}
