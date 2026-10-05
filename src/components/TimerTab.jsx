@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, Check, List, Volume2, Palette, Type, Settings, BellOff, Bookmark, X } from 'lucide-react';
-import { speak, formatSpeechTime } from '../utils/speech';
+import { speak, formatSpeechTime, estimateSpeechTime } from '../utils/speech';
 import { setTimerBackgroundState, playSilentAudio } from '../utils/background';
 import { NativeTimer } from '../utils/nativeTimer';
 import TimePickerModal from './TimePickerModal';
@@ -297,13 +297,20 @@ export default function TimerTab() {
             <input type="checkbox" checked={voiceNoteSpeak} onChange={e => setVoiceNoteSpeak(e.target.checked)} />
             <span className="custom-checkbox"><Check size={14} /></span> Voice Note
           </label>
-          <input 
-            type="text" 
-            placeholder="e.g. Keep your core tight" 
-            value={voiceNote} 
-            onChange={e => setVoiceNote(e.target.value)}
-            style={{flex: 1, background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', marginLeft: '10px', fontFamily: 'inherit'}}
-          />
+          <div style={{flex: 1, display: 'flex', flexDirection: 'column', marginLeft: '10px'}}>
+            <input 
+              type="text" 
+              placeholder="e.g. Keep your core tight" 
+              value={voiceNote} 
+              onChange={e => setVoiceNote(e.target.value)}
+              style={{background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', fontFamily: 'inherit'}}
+            />
+            {voiceNote.trim() !== '' && (
+              <span style={{fontSize: '0.75rem', color: '#888', marginTop: '4px', marginLeft: '2px'}}>
+                ~{estimateSpeechTime(voiceNote)}s to read
+              </span>
+            )}
+          </div>
         </div>
         {voiceNoteSpeak && (
           <div className="setting-row">

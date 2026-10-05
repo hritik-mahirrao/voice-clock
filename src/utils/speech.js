@@ -51,3 +51,16 @@ export const formatSpeechTime = (totalSeconds) => {
   if (s > 0 || (h===0 && m===0)) parts.push(`${s} second${s > 1 ? 's' : ''}`);
   return parts.join(' and ');
 };
+
+export const estimateSpeechTime = (text) => {
+  if (!text || text.trim() === '') return 0;
+  const settings = getSpeechSettings();
+  const words = text.trim().split(/\s+/).length;
+  // Average speaking rate: ~140 words per minute at 1.0x speed
+  // which is ~2.33 words per second.
+  // We divide by the current user's speech rate multiplier
+  const wps = 2.33 * settings.rate;
+  const seconds = words / wps;
+  // Also add a small constant overhead for initialization
+  return Math.max(0.5, seconds).toFixed(1);
+};
