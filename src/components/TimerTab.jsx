@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, Check, List, Volume2, Palette, Type, Settings, BellOff, Bookmark, X } from 'lucide-react';
 import { speak, formatSpeechTime } from '../utils/speech';
-import { setTimerBackgroundState } from '../utils/background';
+import { setTimerBackgroundState, playSilentAudio } from '../utils/background';
+import { NativeTimer } from '../utils/nativeTimer';
 import TimePickerModal from './TimePickerModal';
 import TemplatesModal from './TemplatesModal';
 
@@ -83,6 +84,7 @@ export default function TimerTab() {
   const timerRef = useRef(null);
   const targetTimeRef = useRef(0);
   const wakeLockRef = useRef(null);
+  const tickListenerRef = useRef(null);
 
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -114,60 +116,79 @@ export default function TimerTab() {
       requestWakeLock();
       targetTimeRef.current = Date.now() + seconds * 1000;
       
-      timerRef.current = setInterval(() => {
-        const now = Date.now();
-        const remainingMs = targetTimeRef.current - now;
-        const remainingSec = Math.ceil(remainingMs / 1000);
+      const setupTimer = async () => {
+        if (tickListenerRef.current) {
+            await tickListenerRef.current.remove();
+        }
+        tickListenerRef.current = await NativeTimer.addListener('onTick', () => {
+          const now = Date.now();
+          const remainingMs = targetTimeRef.current - now;
+          const remainingSec = Math.ceil(remainingMs / 1000);
 
-        if (remainingSec <= 0) {
-          clearInterval(timerRef.current);
-          setIsRunning(false);
-          setSeconds(0);
-          releaseWakeLock();
-          speak("Time is up!");
-          return;
-        }
-        
-        setSeconds(remainingSec);
-        
-        let shouldSpeakTime = intervalSpeak && remainingSec > 0 && remainingSec % intervalVal === 0 && lastSpokenInterval !== remainingSec;
-        let shouldSpeakNote = voiceNoteSpeak && voiceNote.trim() && remainingSec > 0;
-        
-        let noteToSpeak = "";
-        if (shouldSpeakNote) {
-           if (voiceNoteIntervalType === 'sync' && shouldSpeakTime) {
-              noteToSpeak = voiceNote.trim();
-           } else if (voiceNoteIntervalType === 'custom' && voiceNoteIntervalVal > 0 && remainingSec % voiceNoteIntervalVal === 0 && lastSpokenNoteInterval !== remainingSec) {
-              noteToSpeak = voiceNote.trim();
-              lastSpokenNoteInterval = remainingSec;
-           }
-        }
-
-        if (shouldSpeakTime || noteToSpeak) {
-           let msg = "";
-           if (shouldSpeakTime) {
-             msg += formatSpeechTime(remainingSec) + " left";
-             lastSpokenInterval = remainingSec;
-           }
-           if (noteToSpeak) {
-             msg += (msg ? ". " : "") + noteToSpeak;
-           }
-           speak(msg);
-        }
-        
-        if (countdownSpeak && remainingSec > 0 && remainingSec <= countdownVal) {
-          if (lastSpokenCountdown !== remainingSec) {
-            speak(remainingSec.toString());
-            lastSpokenCountdown = remainingSec;
+          if (remainingSec <= 0) {
+            NativeTimer.stop();
+            if (tickListenerRef.current) {
+                tickListenerRef.current.remove();
+                tickListenerRef.current = null;
+            }
+            setIsRunning(false);
+            setSeconds(0);
+            releaseWakeLock();
+            speak("Time is up!");
+            return;
           }
-        }
-      }, 100); // Check frequently to handle background throttling
+          
+          setSeconds(remainingSec);
+          
+          let shouldSpeakTime = intervalSpeak && remainingSec > 0 && remainingSec % intervalVal === 0 && lastSpokenInterval !== remainingSec;
+          let shouldSpeakNote = voiceNoteSpeak && voiceNote.trim() && remainingSec > 0;
+          
+          let noteToSpeak = "";
+          if (shouldSpeakNote) {
+             if (voiceNoteIntervalType === 'sync' && shouldSpeakTime) {
+                noteToSpeak = voiceNote.trim();
+             } else if (voiceNoteIntervalType === 'custom' && voiceNoteIntervalVal > 0 && remainingSec % voiceNoteIntervalVal === 0 && lastSpokenNoteInterval !== remainingSec) {
+                noteToSpeak = voiceNote.trim();
+                lastSpokenNoteInterval = remainingSec;
+             }
+          }
+
+          if (shouldSpeakTime || noteToSpeak) {
+             let msg = "";
+             if (shouldSpeakTime) {
+               msg += formatSpeechTime(remainingSec) + " left";
+               lastSpokenInterval = remainingSec;
+             }
+             if (noteToSpeak) {
+               msg += (msg ? ". " : "") + noteToSpeak;
+             }
+             speak(msg);
+          }
+          
+          if (countdownSpeak && remainingSec > 0 && remainingSec <= countdownVal) {
+            if (lastSpokenCountdown !== remainingSec) {
+              speak(remainingSec.toString());
+              lastSpokenCountdown = remainingSec;
+            }
+          }
+        });
+        await NativeTimer.start({ ms: 100 });
+      };
+      setupTimer();
     } else {
-      clearInterval(timerRef.current);
+      NativeTimer.stop();
+      if (tickListenerRef.current) {
+          tickListenerRef.current.remove();
+          tickListenerRef.current = null;
+      }
       releaseWakeLock();
     }
     return () => {
-      clearInterval(timerRef.current);
+      NativeTimer.stop();
+      if (tickListenerRef.current) {
+          tickListenerRef.current.remove();
+          tickListenerRef.current = null;
+      }
       releaseWakeLock();
     };
   }, [isRunning, intervalSpeak, intervalVal, countdownSpeak, countdownVal]);
@@ -179,6 +200,7 @@ export default function TimerTab() {
 
   const toggleTimer = () => {
     if (seconds <= 0) return;
+    if (!isRunning) playSilentAudio();
     setIsRunning(!isRunning);
   };
 

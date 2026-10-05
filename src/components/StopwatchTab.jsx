@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Check, Bookmark, X } from 'lucide-react';
 import { speak, formatSpeechTime } from '../utils/speech';
-import { setStopwatchBackgroundState } from '../utils/background';
+import { setStopwatchBackgroundState, playSilentAudio } from '../utils/background';
+import { NativeTimer } from '../utils/nativeTimer';
 import TimePickerModal from './TimePickerModal';
 import TemplatesModal from './TemplatesModal';
 
@@ -82,6 +83,7 @@ export default function StopwatchTab() {
   const startTimeRef = useRef(null);
   const elapsedWhenPausedRef = useRef(0);
   const wakeLockRef = useRef(null);
+  const tickListenerRef = useRef(null);
 
   const requestWakeLock = async () => {
     try {
@@ -110,57 +112,72 @@ export default function StopwatchTab() {
         startTimeRef.current = Date.now() - elapsedWhenPausedRef.current;
       }
       
-      swRef.current = setInterval(() => {
-        const now = Date.now();
-        const currentMs = now - startTimeRef.current;
-        setMs(currentMs);
-
-        let shouldSpeakTime = false;
-        let currentIntervalTarget = 0;
-        if (intervalSpeak && intervalVal > 0) {
-          currentIntervalTarget = Math.floor(currentMs / intervalVal) * intervalVal;
-          if (currentIntervalTarget > 0 && currentIntervalTarget !== lastSpokenInterval && currentMs >= currentIntervalTarget) {
-            shouldSpeakTime = true;
-          }
+      const setupTimer = async () => {
+        if (tickListenerRef.current) {
+            await tickListenerRef.current.remove();
         }
+        tickListenerRef.current = await NativeTimer.addListener('onTick', () => {
+          const now = Date.now();
+          const currentMs = now - startTimeRef.current;
+          setMs(currentMs);
 
-        let shouldSpeakNote = false;
-        let currentNoteIntervalTarget = 0;
-        if (voiceNoteSpeak && voiceNote.trim()) {
-          if (voiceNoteIntervalType === 'sync') {
-            shouldSpeakNote = shouldSpeakTime;
-          } else if (voiceNoteIntervalType === 'custom' && voiceNoteIntervalVal > 0) {
-            currentNoteIntervalTarget = Math.floor(currentMs / voiceNoteIntervalVal) * voiceNoteIntervalVal;
-            if (currentNoteIntervalTarget > 0 && currentNoteIntervalTarget !== lastSpokenNoteInterval && currentMs >= currentNoteIntervalTarget) {
-              shouldSpeakNote = true;
+          let shouldSpeakTime = false;
+          let currentIntervalTarget = 0;
+          if (intervalSpeak && intervalVal > 0) {
+            currentIntervalTarget = Math.floor(currentMs / intervalVal) * intervalVal;
+            if (currentIntervalTarget > 0 && currentIntervalTarget !== lastSpokenInterval && currentMs >= currentIntervalTarget) {
+              shouldSpeakTime = true;
             }
           }
-        }
 
-        if (shouldSpeakTime || shouldSpeakNote) {
-          let msg = "";
-          if (shouldSpeakTime) {
-            msg += formatSpeechTime(Math.floor(currentIntervalTarget / 1000));
-            lastSpokenInterval = currentIntervalTarget;
-          }
-          if (shouldSpeakNote) {
-            msg += (msg ? ". " : "") + voiceNote.trim();
-            if (voiceNoteIntervalType === 'custom') {
-              lastSpokenNoteInterval = currentNoteIntervalTarget;
+          let shouldSpeakNote = false;
+          let currentNoteIntervalTarget = 0;
+          if (voiceNoteSpeak && voiceNote.trim()) {
+            if (voiceNoteIntervalType === 'sync') {
+              shouldSpeakNote = shouldSpeakTime;
+            } else if (voiceNoteIntervalType === 'custom' && voiceNoteIntervalVal > 0) {
+              currentNoteIntervalTarget = Math.floor(currentMs / voiceNoteIntervalVal) * voiceNoteIntervalVal;
+              if (currentNoteIntervalTarget > 0 && currentNoteIntervalTarget !== lastSpokenNoteInterval && currentMs >= currentNoteIntervalTarget) {
+                shouldSpeakNote = true;
+              }
             }
           }
-          speak(msg);
-        }
-      }, 50); // Run frequently enough for UI updates, but relies on Date.now() for accuracy
+
+          if (shouldSpeakTime || shouldSpeakNote) {
+            let msg = "";
+            if (shouldSpeakTime) {
+              msg += formatSpeechTime(Math.floor(currentIntervalTarget / 1000));
+              lastSpokenInterval = currentIntervalTarget;
+            }
+            if (shouldSpeakNote) {
+              msg += (msg ? ". " : "") + voiceNote.trim();
+              if (voiceNoteIntervalType === 'custom') {
+                lastSpokenNoteInterval = currentNoteIntervalTarget;
+              }
+            }
+            speak(msg);
+          }
+        });
+        await NativeTimer.start({ ms: 50 });
+      };
+      setupTimer();
     } else {
-      clearInterval(swRef.current);
+      NativeTimer.stop();
+      if (tickListenerRef.current) {
+          tickListenerRef.current.remove();
+          tickListenerRef.current = null;
+      }
       releaseWakeLock();
       if (ms > 0) {
         elapsedWhenPausedRef.current = ms;
       }
     }
     return () => {
-      clearInterval(swRef.current);
+      NativeTimer.stop();
+      if (tickListenerRef.current) {
+          tickListenerRef.current.remove();
+          tickListenerRef.current = null;
+      }
       releaseWakeLock();
     };
   }, [isRunning, intervalSpeak, intervalVal]);
@@ -180,6 +197,7 @@ export default function StopwatchTab() {
        startTimeRef.current = null;
        elapsedWhenPausedRef.current = 0;
     }
+    if (!isRunning) playSilentAudio();
     setIsRunning(!isRunning);
   }
 

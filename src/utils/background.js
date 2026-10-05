@@ -6,6 +6,16 @@ let currentTimerText = '';
 let currentStopwatchText = '';
 
 let updateTimeout = null;
+let silentAudio = null;
+
+function getSilentAudio() {
+  if (!silentAudio) {
+    // A tiny, valid silent WAV file base64 encoded
+    silentAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+    silentAudio.loop = true;
+  }
+  return silentAudio;
+}
 
 async function executeUpdate() {
   const isRunning = timerRunning || stopwatchRunning;
@@ -33,8 +43,15 @@ async function executeUpdate() {
           text: text,
           hidden: false,
           resume: true,
-          color: '2563eb'
+          color: '2563eb',
+          disableWebViewOptimization: true
         });
+        
+        // Explicitly force webview and battery optimizations off for background JS execution
+        try {
+          await BackgroundMode.disableWebViewOptimizations();
+        } catch(e) {}
+
       } else {
         await BackgroundMode.updateNotification({
           title: 'Voice Clock Active',
@@ -49,6 +66,20 @@ async function executeUpdate() {
       await BackgroundMode.disable();
     } catch(e) {}
   }
+}
+
+export function playSilentAudio() {
+  try {
+    getSilentAudio().play().catch(e => console.error('Silent audio play failed:', e));
+  } catch(e) {}
+}
+
+export function pauseSilentAudio() {
+  try {
+    if (silentAudio) {
+      silentAudio.pause();
+    }
+  } catch(e) {}
 }
 
 function scheduleUpdate() {
