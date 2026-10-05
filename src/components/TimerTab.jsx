@@ -111,6 +111,7 @@ export default function TimerTab() {
     let lastSpokenInterval = null;
     let lastSpokenCountdown = null;
     let lastSpokenNoteInterval = null;
+    let hasSpokenStartNote = false;
 
     if (isRunning) {
       requestWakeLock();
@@ -134,7 +135,7 @@ export default function TimerTab() {
             setIsRunning(false);
             setSeconds(0);
             releaseWakeLock();
-            speak("Time is up!");
+            speak("Time is up!", true);
             return;
           }
           
@@ -145,10 +146,14 @@ export default function TimerTab() {
           
           let noteToSpeak = "";
           if (shouldSpeakNote) {
-             if (voiceNoteIntervalType === 'sync' && shouldSpeakTime) {
+             let isAtStart = !hasSpokenStartNote && remainingSec === seconds;
+             if (voiceNoteIntervalType === 'sync' && (shouldSpeakTime || isAtStart)) {
                 noteToSpeak = voiceNote.trim();
-             } else if (voiceNoteIntervalType === 'custom' && voiceNoteIntervalVal > 0 && remainingSec % voiceNoteIntervalVal === 0 && lastSpokenNoteInterval !== remainingSec) {
+                hasSpokenStartNote = true;
+                if (isAtStart) lastSpokenNoteInterval = remainingSec;
+             } else if (voiceNoteIntervalType === 'custom' && voiceNoteIntervalVal > 0 && ((remainingSec % voiceNoteIntervalVal === 0) || isAtStart) && lastSpokenNoteInterval !== remainingSec) {
                 noteToSpeak = voiceNote.trim();
+                hasSpokenStartNote = true;
                 lastSpokenNoteInterval = remainingSec;
              }
           }

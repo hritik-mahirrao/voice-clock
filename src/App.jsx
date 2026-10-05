@@ -32,6 +32,7 @@ function App() {
           }
         } catch (e) {
           console.error("OTA Update Check Failed:", e);
+          alert("OTA Update Failed: " + e.message);
         }
       };
       checkUpdate();

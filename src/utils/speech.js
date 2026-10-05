@@ -16,9 +16,22 @@ export const setSpeechSettings = (rate, pitch, voiceURI) => {
   }
 };
 
-export const speak = async (text) => {
+let speechEndTime = 0;
+
+export const speak = async (text, force = false) => {
   try {
-    await TextToSpeech.stop();
+    const now = Date.now();
+    if (!force && now < speechEndTime) {
+      // Currently speaking, drop this message to prevent abrupt cutoffs
+      return;
+    }
+    
+    const est = parseFloat(estimateSpeechTime(text));
+    speechEndTime = now + (est * 1000);
+
+    if (force) {
+      await TextToSpeech.stop();
+    }
     const settings = getSpeechSettings();
     
     // We only pass voiceURI if it's not empty, but capacitor plugin uses it directly if we want?

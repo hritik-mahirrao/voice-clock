@@ -105,6 +105,7 @@ export default function StopwatchTab() {
   useEffect(() => {
     let lastSpokenInterval = null;
     let lastSpokenNoteInterval = null;
+    let hasSpokenStartNote = false;
 
     if (isRunning) {
       requestWakeLock();
@@ -135,7 +136,10 @@ export default function StopwatchTab() {
           let shouldSpeakNote = false;
           let currentNoteIntervalTarget = 0;
           if (voiceNoteSpeak && voiceNote.trim()) {
-            if (voiceNoteIntervalType === 'sync') {
+            if (!hasSpokenStartNote && currentMs < 1000) {
+              shouldSpeakNote = true;
+              hasSpokenStartNote = true;
+            } else if (voiceNoteIntervalType === 'sync') {
               shouldSpeakNote = shouldSpeakTime;
             } else if (voiceNoteIntervalType === 'custom' && voiceNoteIntervalVal > 0) {
               currentNoteIntervalTarget = Math.floor(currentMs / voiceNoteIntervalVal) * voiceNoteIntervalVal;
@@ -153,7 +157,7 @@ export default function StopwatchTab() {
             }
             if (shouldSpeakNote) {
               msg += (msg ? ". " : "") + voiceNote.trim();
-              if (voiceNoteIntervalType === 'custom') {
+              if (voiceNoteIntervalType === 'custom' && currentNoteIntervalTarget > 0) {
                 lastSpokenNoteInterval = currentNoteIntervalTarget;
               }
             }
@@ -235,9 +239,9 @@ export default function StopwatchTab() {
     setLastLapMs(ms);
 
     if (speakLapTime) {
-      speak(`Lap ${newLap.id}, ${formatSpeechTime(Math.floor(currentLapMs / 1000))}`);
+      speak(`Lap ${newLap.id}, ${formatSpeechTime(Math.floor(currentLapMs / 1000))}`, true);
     } else if (speakLapTotal) {
-      speak(`Total time, ${formatSpeechTime(Math.floor(ms / 1000))}`);
+      speak(`Total time, ${formatSpeechTime(Math.floor(ms / 1000))}`, true);
     }
   };
 
