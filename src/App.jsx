@@ -55,6 +55,7 @@ function App() {
         <button className="menu-btn" onClick={() => setIsSidebarOpen(true)}>
           <Menu size={24} />
         </button>
+        <span style={{ fontSize: '10px', color: '#666', marginLeft: '5px' }}>v2</span>
         <div className="tabs">
           <button 
             className={`tab-btn ${activeTab === 'clock' ? 'active' : ''}`}
