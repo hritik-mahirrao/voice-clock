@@ -117,6 +117,7 @@ export default function StopwatchTab() {
             await tickListenerRef.current.remove();
         }
         tickListenerRef.current = await NativeTimer.addListener('onTick', () => {
+          if (!startTimeRef.current) return;
           const now = Date.now();
           const currentMs = now - startTimeRef.current;
           currentMsRef.current = currentMs;
@@ -191,10 +192,11 @@ export default function StopwatchTab() {
   }, [isRunning, Math.floor(ms / 1000)]);
 
   const toggleSw = () => {
-    if (!isRunning && ms === 0 && currentMsRef.current === 0) {
-       startTimeRef.current = null;
+    if (isRunning) {
+      startTimeRef.current = null;
+    } else {
+      playSilentAudio();
     }
-    if (!isRunning) playSilentAudio();
     setIsRunning(!isRunning);
   }
 
