@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Menu, Clock as ClockIcon, Hourglass, Timer as TimerIcon } from 'lucide-react';
 import ClockTab from './components/ClockTab';
 import TimerTab from './components/TimerTab';
@@ -11,6 +13,30 @@ function App() {
   const [activeTab, setActiveTab] = useState('timer');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSpeechModalOpen, setIsSpeechModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      CapacitorUpdater.notifyAppReady();
+      const checkUpdate = async () => {
+        try {
+          const response = await fetch('https://hritik-mahirrao.github.io/voice-clock/update.json?t=' + Date.now());
+          const data = await response.json();
+          
+          const current = await CapacitorUpdater.current();
+          if (current.version !== data.version) {
+             const version = await CapacitorUpdater.download({
+                url: data.url,
+                version: data.version
+             });
+             await CapacitorUpdater.set({ id: version.id });
+          }
+        } catch (e) {
+          console.error("OTA Update Check Failed:", e);
+        }
+      };
+      checkUpdate();
+    }
+  }, []);
 
   return (
     <div className="app-container">
