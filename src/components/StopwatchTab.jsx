@@ -81,7 +81,7 @@ export default function StopwatchTab() {
 
   const swRef = useRef(null);
   const startTimeRef = useRef(null);
-  const elapsedWhenPausedRef = useRef(0);
+  const currentMsRef = useRef(0);
   const wakeLockRef = useRef(null);
   const tickListenerRef = useRef(null);
 
@@ -109,7 +109,7 @@ export default function StopwatchTab() {
     if (isRunning) {
       requestWakeLock();
       if (!startTimeRef.current) {
-        startTimeRef.current = Date.now() - elapsedWhenPausedRef.current;
+        startTimeRef.current = Date.now() - currentMsRef.current;
       }
       
       const setupTimer = async () => {
@@ -119,6 +119,7 @@ export default function StopwatchTab() {
         tickListenerRef.current = await NativeTimer.addListener('onTick', () => {
           const now = Date.now();
           const currentMs = now - startTimeRef.current;
+          currentMsRef.current = currentMs;
           setMs(currentMs);
 
           let shouldSpeakTime = false;
@@ -168,9 +169,6 @@ export default function StopwatchTab() {
           tickListenerRef.current = null;
       }
       releaseWakeLock();
-      if (ms > 0) {
-        elapsedWhenPausedRef.current = ms;
-      }
     }
     return () => {
       NativeTimer.stop();
@@ -193,9 +191,8 @@ export default function StopwatchTab() {
   }, [isRunning, Math.floor(ms / 1000)]);
 
   const toggleSw = () => {
-    if (!isRunning && ms === 0) {
+    if (!isRunning && ms === 0 && currentMsRef.current === 0) {
        startTimeRef.current = null;
-       elapsedWhenPausedRef.current = 0;
     }
     if (!isRunning) playSilentAudio();
     setIsRunning(!isRunning);
@@ -204,10 +201,10 @@ export default function StopwatchTab() {
   const reset = () => {
     setIsRunning(false);
     setMs(0);
+    currentMsRef.current = 0;
     setLaps([]);
     setLastLapMs(0);
     startTimeRef.current = null;
-    elapsedWhenPausedRef.current = 0;
   };
 
   const formatDisplay = (totalMs) => {

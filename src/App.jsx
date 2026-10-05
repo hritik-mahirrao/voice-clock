@@ -52,9 +52,15 @@ function App() {
       </header>
 
       <main className="content-area">
-        {activeTab === 'clock' && <ClockTab />}
-        {activeTab === 'timer' && <TimerTab />}
-        {activeTab === 'stopwatch' && <StopwatchTab />}
+        <div style={{ display: activeTab === 'clock' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
+          <ClockTab />
+        </div>
+        <div style={{ display: activeTab === 'timer' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
+          <TimerTab />
+        </div>
+        <div style={{ display: activeTab === 'stopwatch' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
+          <StopwatchTab />
+        </div>
       </main>
     </div>
   );
