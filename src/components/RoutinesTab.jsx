@@ -176,8 +176,14 @@ export default function RoutinesTab() {
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center' }}>
                           <span style={{color: 'var(--text-muted)', fontSize: '0.8rem'}}>Repeat:</span>
                           <select 
-                            value={el.repeatInterval || '0'} 
-                            onChange={e => updateElement(routine.id, el.id, 'repeatInterval', e.target.value)}
+                            value={['0','5','10','15','30','60','120','240'].includes(el.repeatInterval || '0') ? (el.repeatInterval || '0') : 'custom'} 
+                            onChange={e => {
+                               if (e.target.value === 'custom') {
+                                   updateElement(routine.id, el.id, 'repeatInterval', '1');
+                               } else {
+                                   updateElement(routine.id, el.id, 'repeatInterval', e.target.value);
+                               }
+                            }}
                             style={{ background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '6px', borderRadius: '4px', fontSize: '0.8rem' }}
                           >
                             <option value="0">None</option>
@@ -188,7 +194,20 @@ export default function RoutinesTab() {
                             <option value="60">Every 1 hour</option>
                             <option value="120">Every 2 hours</option>
                             <option value="240">Every 4 hours</option>
+                            <option value="custom">Custom...</option>
                           </select>
+                          {!['0','5','10','15','30','60','120','240'].includes(el.repeatInterval || '0') && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                              <input 
+                                type="number" 
+                                value={el.repeatInterval} 
+                                onChange={e => updateElement(routine.id, el.id, 'repeatInterval', e.target.value)} 
+                                style={{ width: '45px', background: 'var(--btn-bg)', border: '1px solid var(--routines-color)', color: 'white', padding: '5px', borderRadius: '4px', fontSize: '0.8rem', textAlign: 'center' }} 
+                                min="1"
+                              />
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>min</span>
+                            </div>
+                          )}
                           {el.repeatInterval && el.repeatInterval !== '0' && (
                             <>
                               <span style={{color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: '5px'}}>Until:</span>
