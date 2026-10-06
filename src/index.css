@@ -7,6 +7,7 @@
   --timer-color: #00b0f0;
   --stopwatch-color: #ff5277;
   --clock-color: #4cd964;
+  --routines-color: #ff9500;
 
   --btn-bg: #333333;
   --btn-hover: #444444;
@@ -652,4 +653,19 @@ select {
   .settings-panel { padding: 10px 15px; }
   .controls-container { padding: 10px; }
   .main-action-btn { width: 60px; height: 60px; }
+}
+
+.routines-theme .colon,
+.routines-theme .ms,
+.routines-theme .text-btn {
+  color: var(--routines-color);
+}
+.routines-theme .main-action-btn {
+  background-color: var(--routines-color);
+}
+.routines-check {
+  border-color: var(--routines-color);
+}
+.routines-check svg {
+  color: var(--routines-color);
 }

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
-import { Menu, Clock as ClockIcon, Hourglass, Timer as TimerIcon } from 'lucide-react';
+import { Menu, Clock as ClockIcon, Hourglass, Timer as TimerIcon, ListRestart } from 'lucide-react';
 import ClockTab from './components/ClockTab';
 import TimerTab from './components/TimerTab';
 import StopwatchTab from './components/StopwatchTab';
+import RoutinesTab from './components/RoutinesTab';
 import Sidebar from './components/Sidebar';
 import SpeechSettingsModal from './components/SpeechSettingsModal';
 import './index.css';
@@ -76,6 +77,12 @@ function App() {
           >
             <TimerIcon size={18} /> Stopwatch
           </button>
+          <button 
+            className={`tab-btn ${activeTab === 'routines' ? 'active' : ''}`}
+            onClick={() => setActiveTab('routines')}
+          >
+            <ListRestart size={18} /> Routines
+          </button>
         </div>
       </header>
 
@@ -88,6 +95,9 @@ function App() {
         </div>
         <div style={{ display: activeTab === 'stopwatch' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
           <StopwatchTab />
+        </div>
+        <div style={{ display: activeTab === 'routines' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
+          <RoutinesTab />
         </div>
       </main>
     </div>
