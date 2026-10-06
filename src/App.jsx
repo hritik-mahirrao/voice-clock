@@ -50,7 +50,8 @@ function App() {
       const currentMinutes = now.getMinutes().toString().padStart(2, '0');
       const currentTimeStr = `${currentHours}:${currentMinutes}`;
       
-      const timeKey = `${currentDay}-${currentTimeStr}`;
+      const currentTotalSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+      const timeKey = `${currentDay}-${currentTotalSeconds}`;
       
       if (lastSpokenRoutineRef.current !== timeKey) {
         const saved = localStorage.getItem('voiceClockRoutines');
@@ -63,32 +64,39 @@ function App() {
                   if (el.days[currentDay] && el.text) {
                     let shouldSpeak = false;
                     
-                    if (el.repeatInterval && parseInt(el.repeatInterval, 10) > 0) {
+                    if (el.repeatInterval && parseFloat(el.repeatInterval) > 0) {
                       const [startH, startM] = el.time.split(':').map(Number);
-                      const startMinutes = startH * 60 + startM;
-                      const currentTotalMinutes = parseInt(currentHours, 10) * 60 + parseInt(currentMinutes, 10);
-                      const interval = parseInt(el.repeatInterval, 10);
+                      const startSeconds = startH * 3600 + startM * 60;
+                      const intervalSecs = Math.round(parseFloat(el.repeatInterval) * 60);
                       
-                      let endMinutes = 24 * 60; // default to midnight
+                      let endSeconds = 24 * 3600; // default to midnight
                       if (el.endTime) {
                          const [endH, endM] = el.endTime.split(':').map(Number);
-                         endMinutes = endH * 60 + endM;
+                         endSeconds = endH * 3600 + endM * 60;
                       }
                       
-                      if (currentTotalMinutes >= startMinutes && currentTotalMinutes <= endMinutes) {
-                          if ((currentTotalMinutes - startMinutes) % interval === 0) {
-                              shouldSpeak = true;
+                      if (currentTotalSeconds >= startSeconds && currentTotalSeconds <= endSeconds) {
+                          // Allow a 10 second window since setInterval runs every 10s
+                          const diff = currentTotalSeconds - startSeconds;
+                          if (diff % intervalSecs < 10) {
+                              // Ensure we don't speak multiple times within the same interval window
+                              const intervalIndex = Math.floor(diff / intervalSecs);
+                              const spokenKey = `${routine.id}-${el.id}-${currentDay}-${intervalIndex}`;
+                              
+                              if (lastSpokenRoutineRef.current !== spokenKey) {
+                                shouldSpeak = true;
+                                lastSpokenRoutineRef.current = spokenKey;
+                              }
                           }
                       }
                     } else {
-                      if (el.time === currentTimeStr) {
+                      if (el.time === currentTimeStr && now.getSeconds() < 10) {
                         shouldSpeak = true;
                       }
                     }
 
                     if (shouldSpeak) {
                       speak(el.text, true);
-                      lastSpokenRoutineRef.current = timeKey;
                     }
                   }
                 }

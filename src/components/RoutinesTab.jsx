@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, ChevronDown, ChevronUp, Save, X } from 'lucide-react';
+import TimePickerModal from './TimePickerModal';
 
 export default function RoutinesTab() {
   const [routines, setRoutines] = useState(() => {
     const saved = localStorage.getItem('voiceClockRoutines');
     return saved ? JSON.parse(saved) : [];
   });
+  });
   const [editingRoutineId, setEditingRoutineId] = useState(null);
   const [expandedRoutineId, setExpandedRoutineId] = useState(null);
+  
+  const [customPickerOpen, setCustomPickerOpen] = useState(false);
+  const [customPickerTarget, setCustomPickerTarget] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('voiceClockRoutines', JSON.stringify(routines));
@@ -176,13 +181,14 @@ export default function RoutinesTab() {
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center' }}>
                           <span style={{color: 'var(--text-muted)', fontSize: '0.8rem'}}>Repeat:</span>
                           <select 
-                            value={['0','5','10','15','30','60','120','240'].includes(el.repeatInterval || '0') ? (el.repeatInterval || '0') : 'custom'} 
+                            value={['0','5','10','15','30','60','120','240'].includes(el.repeatInterval) ? el.repeatInterval : 'custom'} 
                             onChange={e => {
-                               if (e.target.value === 'custom') {
-                                   updateElement(routine.id, el.id, 'repeatInterval', '1');
-                               } else {
-                                   updateElement(routine.id, el.id, 'repeatInterval', e.target.value);
-                               }
+                              if (e.target.value === 'custom') {
+                                setCustomPickerTarget({ routineId: routine.id, elementId: el.id, currentVal: el.repeatInterval === '0' ? 60 : parseInt(el.repeatInterval, 10) * 60 });
+                                setCustomPickerOpen(true);
+                              } else {
+                                updateElement(routine.id, el.id, 'repeatInterval', e.target.value);
+                              }
                             }}
                             style={{ background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '6px', borderRadius: '4px', fontSize: '0.8rem' }}
                           >
@@ -194,20 +200,10 @@ export default function RoutinesTab() {
                             <option value="60">Every 1 hour</option>
                             <option value="120">Every 2 hours</option>
                             <option value="240">Every 4 hours</option>
-                            <option value="custom">Custom...</option>
+                            <option value="custom">
+                              {['0','5','10','15','30','60','120','240'].includes(el.repeatInterval) ? 'Custom...' : `Custom (${Math.floor(parseInt(el.repeatInterval, 10)*60 / 3600)}h ${Math.floor((parseInt(el.repeatInterval, 10)*60 % 3600) / 60)}m ${(parseInt(el.repeatInterval, 10)*60 % 60)}s)`}
+                            </option>
                           </select>
-                          {!['0','5','10','15','30','60','120','240'].includes(el.repeatInterval || '0') && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                              <input 
-                                type="number" 
-                                value={el.repeatInterval} 
-                                onChange={e => updateElement(routine.id, el.id, 'repeatInterval', e.target.value)} 
-                                style={{ width: '45px', background: 'var(--btn-bg)', border: '1px solid var(--routines-color)', color: 'white', padding: '5px', borderRadius: '4px', fontSize: '0.8rem', textAlign: 'center' }} 
-                                min="1"
-                              />
-                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>min</span>
-                            </div>
-                          )}
                           {el.repeatInterval && el.repeatInterval !== '0' && (
                             <>
                               <span style={{color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: '5px'}}>Until:</span>
@@ -249,6 +245,22 @@ export default function RoutinesTab() {
           ))
         )}
       </div>
+
+      <TimePickerModal 
+        isOpen={customPickerOpen}
+        onClose={() => {
+          setCustomPickerOpen(false);
+          setCustomPickerTarget(null);
+        }}
+        initialSeconds={customPickerTarget ? customPickerTarget.currentVal : 0}
+        onSave={(totalSeconds) => {
+          if (customPickerTarget) {
+            // Store as minutes (decimals allowed for seconds)
+            const minutes = totalSeconds / 60;
+            updateElement(customPickerTarget.routineId, customPickerTarget.elementId, 'repeatInterval', minutes.toString());
+          }
+        }}
+      />
     </section>
   );
 }
