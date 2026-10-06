@@ -2,11 +2,50 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, ChevronDown, ChevronUp, Save, X } from 'lucide-react';
 import TimePickerModal from './TimePickerModal';
 
+const Time12HourPicker = ({ value, onChange, style }) => {
+  const [h24, m] = (value || '00:00').split(':').map(Number);
+  const ampm = h24 >= 12 ? 'PM' : 'AM';
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+
+  const handleHour = (e) => {
+    let newH12 = parseInt(e.target.value, 10);
+    let newH24 = ampm === 'PM' ? (newH12 === 12 ? 12 : newH12 + 12) : (newH12 === 12 ? 0 : newH12);
+    onChange(`${newH24.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+  };
+
+  const handleMin = (e) => {
+    onChange(`${h24.toString().padStart(2, '0')}:${e.target.value.padStart(2, '0')}`);
+  };
+
+  const handleAmPm = (e) => {
+    let newAmPm = e.target.value;
+    let newH24 = h24;
+    if (newAmPm === 'AM' && h24 >= 12) newH24 -= 12;
+    if (newAmPm === 'PM' && h24 < 12) newH24 += 12;
+    onChange(`${newH24.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+  };
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '2px', ...style }}>
+      <select value={h12} onChange={handleHour} style={{ background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '4px', borderRadius: '4px', fontFamily: 'inherit' }}>
+        {[...Array(12)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}
+      </select>
+      <span>:</span>
+      <select value={m.toString().padStart(2, '0')} onChange={handleMin} style={{ background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '4px', borderRadius: '4px', fontFamily: 'inherit' }}>
+        {[...Array(60)].map((_, i) => <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>)}
+      </select>
+      <select value={ampm} onChange={handleAmPm} style={{ background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '4px', borderRadius: '4px', fontFamily: 'inherit', marginLeft: '2px' }}>
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
+    </div>
+  );
+};
+
 export default function RoutinesTab() {
   const [routines, setRoutines] = useState(() => {
     const saved = localStorage.getItem('voiceClockRoutines');
     return saved ? JSON.parse(saved) : [];
-  });
   });
   const [editingRoutineId, setEditingRoutineId] = useState(null);
   const [expandedRoutineId, setExpandedRoutineId] = useState(null);
@@ -163,11 +202,9 @@ export default function RoutinesTab() {
                         
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
                           <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Start:</span>
-                          <input 
-                            type="time" 
+                          <Time12HourPicker 
                             value={el.time} 
-                            onChange={e => updateElement(routine.id, el.id, 'time', e.target.value)}
-                            style={{ background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', fontFamily: 'inherit', width: '100px' }}
+                            onChange={val => updateElement(routine.id, el.id, 'time', val)}
                           />
                           <input 
                             type="text" 
@@ -180,38 +217,49 @@ export default function RoutinesTab() {
 
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center' }}>
                           <span style={{color: 'var(--text-muted)', fontSize: '0.8rem'}}>Repeat:</span>
-                          <select 
-                            value={['0','5','10','15','30','60','120','240'].includes(el.repeatInterval) ? el.repeatInterval : 'custom'} 
-                            onChange={e => {
-                              if (e.target.value === 'custom') {
-                                setCustomPickerTarget({ routineId: routine.id, elementId: el.id, currentVal: el.repeatInterval === '0' ? 60 : parseInt(el.repeatInterval, 10) * 60 });
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <select 
+                              value={el.repeatInterval || '0'} 
+                              onChange={e => {
+                                if (e.target.value === 'custom') {
+                                  setCustomPickerTarget({ routineId: routine.id, elementId: el.id, currentVal: el.repeatInterval === '0' ? 60 : Math.round(parseFloat(el.repeatInterval) * 60) });
+                                  setCustomPickerOpen(true);
+                                } else {
+                                  updateElement(routine.id, el.id, 'repeatInterval', e.target.value);
+                                }
+                              }}
+                              style={{ background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '6px', borderRadius: '4px', fontSize: '0.8rem' }}
+                            >
+                              <option value="0">None</option>
+                              <option value="5">Every 5 mins</option>
+                              <option value="10">Every 10 mins</option>
+                              <option value="15">Every 15 mins</option>
+                              <option value="30">Every 30 mins</option>
+                              <option value="60">Every 1 hour</option>
+                              <option value="120">Every 2 hours</option>
+                              <option value="240">Every 4 hours</option>
+                              {!['0','5','10','15','30','60','120','240'].includes(el.repeatInterval) && (
+                                <option value={el.repeatInterval}>
+                                  {`Custom (${Math.floor(Math.round(parseFloat(el.repeatInterval)*60) / 3600)}h ${Math.floor((Math.round(parseFloat(el.repeatInterval)*60) % 3600) / 60)}m ${Math.round(parseFloat(el.repeatInterval)*60) % 60}s)`}
+                                </option>
+                              )}
+                              <option value="custom">Custom...</option>
+                            </select>
+                            {!['0','5','10','15','30','60','120','240'].includes(el.repeatInterval) && (
+                              <button onClick={() => {
+                                setCustomPickerTarget({ routineId: routine.id, elementId: el.id, currentVal: Math.round(parseFloat(el.repeatInterval) * 60) });
                                 setCustomPickerOpen(true);
-                              } else {
-                                updateElement(routine.id, el.id, 'repeatInterval', e.target.value);
-                              }
-                            }}
-                            style={{ background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '6px', borderRadius: '4px', fontSize: '0.8rem' }}
-                          >
-                            <option value="0">None</option>
-                            <option value="5">Every 5 mins</option>
-                            <option value="10">Every 10 mins</option>
-                            <option value="15">Every 15 mins</option>
-                            <option value="30">Every 30 mins</option>
-                            <option value="60">Every 1 hour</option>
-                            <option value="120">Every 2 hours</option>
-                            <option value="240">Every 4 hours</option>
-                            <option value="custom">
-                              {['0','5','10','15','30','60','120','240'].includes(el.repeatInterval) ? 'Custom...' : `Custom (${Math.floor(parseInt(el.repeatInterval, 10)*60 / 3600)}h ${Math.floor((parseInt(el.repeatInterval, 10)*60 % 3600) / 60)}m ${(parseInt(el.repeatInterval, 10)*60 % 60)}s)`}
-                            </option>
-                          </select>
+                              }} style={{ background: 'none', border: 'none', color: 'var(--routines-color)', cursor: 'pointer', marginLeft: '5px' }}>
+                                <Edit2 size={14} />
+                              </button>
+                            )}
+                          </div>
                           {el.repeatInterval && el.repeatInterval !== '0' && (
                             <>
                               <span style={{color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: '5px'}}>Until:</span>
-                              <input 
-                                type="time" 
+                              <Time12HourPicker 
                                 value={el.endTime || ''} 
-                                onChange={e => updateElement(routine.id, el.id, 'endTime', e.target.value)}
-                                style={{ background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '5px', borderRadius: '4px', fontFamily: 'inherit', fontSize: '0.8rem' }}
+                                onChange={val => updateElement(routine.id, el.id, 'endTime', val)}
                               />
                             </>
                           )}
