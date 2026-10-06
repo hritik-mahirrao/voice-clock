@@ -200,7 +200,7 @@ export default function RoutinesTab() {
                           <button onClick={() => deleteElement(routine.id, el.id)} style={{ background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer' }}><X size={16} /></button>
                         </div>
                         
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                           <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Start:</span>
                           <Time12HourPicker 
                             value={el.time} 
@@ -211,18 +211,18 @@ export default function RoutinesTab() {
                             value={el.text} 
                             placeholder="Message to speak"
                             onChange={e => updateElement(routine.id, el.id, 'text', e.target.value)}
-                            style={{ flex: 1, background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', fontFamily: 'inherit' }}
+                            style={{ flex: 1, minWidth: '150px', background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', fontFamily: 'inherit' }}
                           />
                         </div>
 
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
                           <span style={{color: 'var(--text-muted)', fontSize: '0.8rem'}}>Repeat:</span>
                           <div style={{ display: 'flex', alignItems: 'center' }}>
                             <select 
                               value={el.repeatInterval || '0'} 
                               onChange={e => {
                                 if (e.target.value === 'custom') {
-                                  setCustomPickerTarget({ routineId: routine.id, elementId: el.id, currentVal: el.repeatInterval === '0' ? 60 : Math.round(parseFloat(el.repeatInterval) * 60) });
+                                  setCustomPickerTarget({ routineId: routine.id, elementId: el.id, currentVal: el.repeatInterval === '0' ? 60 : Math.round((parseFloat(el.repeatInterval) || 0) * 60) });
                                   setCustomPickerOpen(true);
                                 } else {
                                   updateElement(routine.id, el.id, 'repeatInterval', e.target.value);
@@ -240,14 +240,17 @@ export default function RoutinesTab() {
                               <option value="240">Every 4 hours</option>
                               {!['0','5','10','15','30','60','120','240'].includes(el.repeatInterval) && (
                                 <option value={el.repeatInterval}>
-                                  {`Custom (${Math.floor(Math.round(parseFloat(el.repeatInterval)*60) / 3600)}h ${Math.floor((Math.round(parseFloat(el.repeatInterval)*60) % 3600) / 60)}m ${Math.round(parseFloat(el.repeatInterval)*60) % 60}s)`}
+                                  {(() => {
+                                    const secs = Math.round((parseFloat(el.repeatInterval) || 0) * 60);
+                                    return `Custom (${Math.floor(secs / 3600)}h ${Math.floor((secs % 3600) / 60)}m ${secs % 60}s)`;
+                                  })()}
                                 </option>
                               )}
                               <option value="custom">Custom...</option>
                             </select>
                             {!['0','5','10','15','30','60','120','240'].includes(el.repeatInterval) && (
                               <button onClick={() => {
-                                setCustomPickerTarget({ routineId: routine.id, elementId: el.id, currentVal: Math.round(parseFloat(el.repeatInterval) * 60) });
+                                setCustomPickerTarget({ routineId: routine.id, elementId: el.id, currentVal: Math.round((parseFloat(el.repeatInterval) || 0) * 60) });
                                 setCustomPickerOpen(true);
                               }} style={{ background: 'none', border: 'none', color: 'var(--routines-color)', cursor: 'pointer', marginLeft: '5px' }}>
                                 <Edit2 size={14} />

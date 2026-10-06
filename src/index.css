@@ -87,6 +87,7 @@ body {
   gap: 15px;
   -ms-overflow-style: none;
   scrollbar-width: none;
+  min-width: 0;
 }
 .tabs::-webkit-scrollbar {
   display: none;
