@@ -1,3 +1,31 @@
-import { registerPlugin } from '@capacitor/core';
+import { registerPlugin, Capacitor } from '@capacitor/core';
 
-export const NativeTimer = registerPlugin('NativeTimer');
+const NativeTimerPlugin = registerPlugin('NativeTimer');
+
+let webInterval = null;
+let webListeners = [];
+
+export const NativeTimer = Capacitor.isNativePlatform() ? NativeTimerPlugin : {
+  start: async ({ ms }) => {
+    if (webInterval) clearInterval(webInterval);
+    webInterval = setInterval(() => {
+      webListeners.forEach(fn => fn());
+    }, ms);
+  },
+  stop: async () => {
+    if (webInterval) {
+      clearInterval(webInterval);
+      webInterval = null;
+    }
+  },
+  addListener: async (eventName, callback) => {
+    if (eventName === 'onTick') {
+      webListeners.push(callback);
+      return {
+        remove: async () => {
+          webListeners = webListeners.filter(fn => fn !== callback);
+        }
+      };
+    }
+  }
+};

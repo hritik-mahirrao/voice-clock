@@ -39,6 +39,8 @@ export default function RoutinesTab() {
               id: Date.now().toString(),
               type: 'voice_reminder',
               time: '08:00',
+              repeatInterval: '0',
+              endTime: '',
               days: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: false, Sun: false },
               text: 'Time for your reminder'
             }
@@ -154,12 +156,13 @@ export default function RoutinesTab() {
                           <button onClick={() => deleteElement(routine.id, el.id)} style={{ background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer' }}><X size={16} /></button>
                         </div>
                         
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+                          <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Start:</span>
                           <input 
                             type="time" 
                             value={el.time} 
                             onChange={e => updateElement(routine.id, el.id, 'time', e.target.value)}
-                            style={{ background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', fontFamily: 'inherit' }}
+                            style={{ background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', fontFamily: 'inherit', width: '100px' }}
                           />
                           <input 
                             type="text" 
@@ -168,6 +171,35 @@ export default function RoutinesTab() {
                             onChange={e => updateElement(routine.id, el.id, 'text', e.target.value)}
                             style={{ flex: 1, background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', fontFamily: 'inherit' }}
                           />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center' }}>
+                          <span style={{color: 'var(--text-muted)', fontSize: '0.8rem'}}>Repeat:</span>
+                          <select 
+                            value={el.repeatInterval || '0'} 
+                            onChange={e => updateElement(routine.id, el.id, 'repeatInterval', e.target.value)}
+                            style={{ background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '6px', borderRadius: '4px', fontSize: '0.8rem' }}
+                          >
+                            <option value="0">None</option>
+                            <option value="5">Every 5 mins</option>
+                            <option value="10">Every 10 mins</option>
+                            <option value="15">Every 15 mins</option>
+                            <option value="30">Every 30 mins</option>
+                            <option value="60">Every 1 hour</option>
+                            <option value="120">Every 2 hours</option>
+                            <option value="240">Every 4 hours</option>
+                          </select>
+                          {el.repeatInterval && el.repeatInterval !== '0' && (
+                            <>
+                              <span style={{color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: '5px'}}>Until:</span>
+                              <input 
+                                type="time" 
+                                value={el.endTime || ''} 
+                                onChange={e => updateElement(routine.id, el.id, 'endTime', e.target.value)}
+                                style={{ background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '5px', borderRadius: '4px', fontFamily: 'inherit', fontSize: '0.8rem' }}
+                              />
+                            </>
+                          )}
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>

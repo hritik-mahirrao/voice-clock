@@ -60,9 +60,36 @@ function App() {
             for (const routine of routines) {
               if (routine.enabled && routine.elements) {
                 for (const el of routine.elements) {
-                  if (el.days[currentDay] && el.time === currentTimeStr && el.text) {
-                    speak(el.text, true);
-                    lastSpokenRoutineRef.current = timeKey;
+                  if (el.days[currentDay] && el.text) {
+                    let shouldSpeak = false;
+                    
+                    if (el.repeatInterval && parseInt(el.repeatInterval, 10) > 0) {
+                      const [startH, startM] = el.time.split(':').map(Number);
+                      const startMinutes = startH * 60 + startM;
+                      const currentTotalMinutes = parseInt(currentHours, 10) * 60 + parseInt(currentMinutes, 10);
+                      const interval = parseInt(el.repeatInterval, 10);
+                      
+                      let endMinutes = 24 * 60; // default to midnight
+                      if (el.endTime) {
+                         const [endH, endM] = el.endTime.split(':').map(Number);
+                         endMinutes = endH * 60 + endM;
+                      }
+                      
+                      if (currentTotalMinutes >= startMinutes && currentTotalMinutes <= endMinutes) {
+                          if ((currentTotalMinutes - startMinutes) % interval === 0) {
+                              shouldSpeak = true;
+                          }
+                      }
+                    } else {
+                      if (el.time === currentTimeStr) {
+                        shouldSpeak = true;
+                      }
+                    }
+
+                    if (shouldSpeak) {
+                      speak(el.text, true);
+                      lastSpokenRoutineRef.current = timeKey;
+                    }
                   }
                 }
               }
