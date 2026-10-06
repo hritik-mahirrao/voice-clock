@@ -136,10 +136,10 @@ function App() {
       />
 
       <header className="top-nav">
-        <button className="menu-btn" onClick={() => setIsSidebarOpen(true)}>
+        <button className="menu-btn" onClick={() => setIsSidebarOpen(true)} style={{ position: 'relative' }}>
           <Menu size={24} />
+          <span style={{ position: 'absolute', bottom: '-8px', left: '50%', transform: 'translateX(-50%)', fontSize: '9px', color: '#888' }}>v2</span>
         </button>
-        <span style={{ fontSize: '10px', color: '#666', marginLeft: '-5px', marginRight: '10px', flexShrink: 0 }}>v2</span>
         <div className="tabs">
           <button 
             className={`tab-btn ${activeTab === 'clock' ? 'active' : ''}`}

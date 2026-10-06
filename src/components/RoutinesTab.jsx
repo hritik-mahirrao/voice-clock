@@ -201,17 +201,19 @@ export default function RoutinesTab() {
                         </div>
                         
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                          <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Start:</span>
-                          <Time12HourPicker 
-                            value={el.time} 
-                            onChange={val => updateElement(routine.id, el.id, 'time', val)}
-                          />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Start:</span>
+                            <Time12HourPicker 
+                              value={el.time} 
+                              onChange={val => updateElement(routine.id, el.id, 'time', val)}
+                            />
+                          </div>
                           <input 
                             type="text" 
                             value={el.text} 
                             placeholder="Message to speak"
                             onChange={e => updateElement(routine.id, el.id, 'text', e.target.value)}
-                            style={{ flex: 1, minWidth: '150px', background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '8px', borderRadius: '4px', fontFamily: 'inherit' }}
+                            style={{ width: '100%', background: 'var(--btn-bg)', border: '1px solid #444', color: 'white', padding: '10px', borderRadius: '6px', fontFamily: 'inherit' }}
                           />
                         </div>
 
