@@ -9,12 +9,14 @@ import RoutinesTab from './components/RoutinesTab';
 import Sidebar from './components/Sidebar';
 import SpeechSettingsModal from './components/SpeechSettingsModal';
 import { speak } from './utils/speech';
+import CloudSyncModal from './components/CloudSyncModal';
 import './index.css';
 
 function App() {
   const [activeTab, setActiveTab] = useState('timer');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSpeechModalOpen, setIsSpeechModalOpen] = useState(false);
+  const [isCloudSyncModalOpen, setIsCloudSyncModalOpen] = useState(false);
   const lastSpokenRoutineRef = useRef(null);
 
   useEffect(() => {
@@ -116,11 +118,17 @@ function App() {
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
         onOpenSpeechSettings={() => setIsSpeechModalOpen(true)}
+        onOpenCloudSync={() => setIsCloudSyncModalOpen(true)}
       />
       
       <SpeechSettingsModal 
         isOpen={isSpeechModalOpen} 
         onClose={() => setIsSpeechModalOpen(false)} 
+      />
+
+      <CloudSyncModal 
+        isOpen={isCloudSyncModalOpen} 
+        onClose={() => setIsCloudSyncModalOpen(false)} 
       />
 
       <header className="top-nav">

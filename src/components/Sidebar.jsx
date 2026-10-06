@@ -1,8 +1,8 @@
 import { 
-  Gift, ThumbsUp, Share2, Grid, Volume2, History, HelpCircle, Shield 
+  Gift, ThumbsUp, Share2, Grid, Volume2, History, HelpCircle, Shield, Cloud
 } from 'lucide-react';
 
-export default function Sidebar({ isOpen, onClose, onOpenSpeechSettings }) {
+export default function Sidebar({ isOpen, onClose, onOpenSpeechSettings, onOpenCloudSync }) {
   return (
     <>
       {/* Overlay to close sidebar by clicking outside */}
@@ -39,8 +39,14 @@ export default function Sidebar({ isOpen, onClose, onOpenSpeechSettings }) {
           </div>
 
           <div className="menu-section">
-            <div className="menu-title">History</div>
+            <div className="menu-title">Data</div>
             <button className="menu-item"><History size={20} /> History</button>
+            <button 
+              className="menu-item" 
+              onClick={() => { onClose(); onOpenCloudSync(); }}
+            >
+              <Cloud size={20} color="#00d0ff" /> Cloud Sync Backup
+            </button>
           </div>
 
           <div className="menu-section">
