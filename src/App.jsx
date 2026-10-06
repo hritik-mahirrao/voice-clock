@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Menu, Clock as ClockIcon, Hourglass, Timer as TimerIcon, ListRestart } from 'lucide-react';
@@ -8,12 +8,14 @@ import StopwatchTab from './components/StopwatchTab';
 import RoutinesTab from './components/RoutinesTab';
 import Sidebar from './components/Sidebar';
 import SpeechSettingsModal from './components/SpeechSettingsModal';
+import { speak } from './utils/speech';
 import './index.css';
 
 function App() {
   const [activeTab, setActiveTab] = useState('timer');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSpeechModalOpen, setIsSpeechModalOpen] = useState(false);
+  const lastSpokenRoutineRef = useRef(null);
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
@@ -38,6 +40,39 @@ function App() {
       };
       checkUpdate();
     }
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const currentDay = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][now.getDay()];
+      const currentHours = now.getHours().toString().padStart(2, '0');
+      const currentMinutes = now.getMinutes().toString().padStart(2, '0');
+      const currentTimeStr = `${currentHours}:${currentMinutes}`;
+      
+      const timeKey = `${currentDay}-${currentTimeStr}`;
+      
+      if (lastSpokenRoutineRef.current !== timeKey) {
+        const saved = localStorage.getItem('voiceClockRoutines');
+        if (saved) {
+          try {
+            const routines = JSON.parse(saved);
+            for (const routine of routines) {
+              if (routine.enabled && routine.elements) {
+                for (const el of routine.elements) {
+                  if (el.days[currentDay] && el.time === currentTimeStr && el.text) {
+                    speak(el.text, true);
+                    lastSpokenRoutineRef.current = timeKey;
+                  }
+                }
+              }
+            }
+          } catch(e) {}
+        }
+      }
+    }, 10000); // check every 10 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   return (
