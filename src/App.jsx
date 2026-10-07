@@ -1,186 +1,101 @@
-import { useState, useEffect, useRef } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { CapacitorUpdater } from '@capgo/capacitor-updater';
-import { Menu, Clock as ClockIcon, Hourglass, Timer as TimerIcon, ListRestart } from 'lucide-react';
-import ClockTab from './components/ClockTab';
-import TimerTab from './components/TimerTab';
-import StopwatchTab from './components/StopwatchTab';
-import RoutinesTab from './components/RoutinesTab';
-import Sidebar from './components/Sidebar';
-import SpeechSettingsModal from './components/SpeechSettingsModal';
-import { speak } from './utils/speech';
-import CloudSyncModal from './components/CloudSyncModal';
-import './index.css';
+import React, { useState, useEffect } from 'react';
+import { BackgroundMode } from '@anuradev/capacitor-background-mode';
+import Dashboard from './components/Dashboard';
+import RoutineList from './components/RoutineList';
+import RoutineEditor from './components/RoutineEditor';
+import { initEngine, startEngine, stopEngine } from './utils/routineEngine';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('timer');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSpeechModalOpen, setIsSpeechModalOpen] = useState(false);
-  const [isCloudSyncModalOpen, setIsCloudSyncModalOpen] = useState(false);
-  const lastSpokenRoutineRef = useRef(null);
+  const [routines, setRoutines] = useState([]);
+  const [currentView, setCurrentView] = useState('dashboard'); // dashboard, list, edit
+  const [editingRoutine, setEditingRoutine] = useState(null);
 
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      CapacitorUpdater.notifyAppReady();
-      const checkUpdate = async () => {
-        try {
-          const response = await fetch('https://hritik-mahirrao.github.io/voice-clock/update.json?t=' + Date.now());
-          const data = await response.json();
-          
-          const current = await CapacitorUpdater.current();
-          if (current.version !== data.version) {
-             const version = await CapacitorUpdater.download({
-                url: data.url,
-                version: data.version
-             });
-             await CapacitorUpdater.set({ id: version.id });
-          }
-        } catch (e) {
-          console.error("OTA Update Check Failed:", e);
-          alert("OTA Update Failed: " + e.message);
-        }
-      };
-      checkUpdate();
-    }
-  }, []);
-
-  useEffect(() => {
-    lastSpokenRoutineRef.current = {}; // initialize as object to store nextAllowed timestamps
-
-    const interval = setInterval(() => {
-      const now = new Date();
-      const currentDay = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][now.getDay()];
-      const currentHours = now.getHours().toString().padStart(2, '0');
-      const currentMinutes = now.getMinutes().toString().padStart(2, '0');
-      const currentTimeStr = `${currentHours}:${currentMinutes}`;
-      
-      const currentTotalSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-      
-      const saved = localStorage.getItem('voiceClockRoutines');
+    const loadRoutines = async () => {
+      const saved = localStorage.getItem('mindfulness_routines');
       if (saved) {
-        try {
-          const routines = JSON.parse(saved);
-          const nowMs = Date.now();
-          
-          for (const routine of routines) {
-            if (routine.enabled && routine.elements) {
-              for (const el of routine.elements) {
-                if (el.days[currentDay] && el.text) {
-                  let shouldSpeak = false;
-                  
-                  if (el.repeatInterval && parseFloat(el.repeatInterval) > 0) {
-                    const [startH, startM] = el.time.split(':').map(Number);
-                    const startSeconds = startH * 3600 + startM * 60;
-                    
-                    let endSeconds = 24 * 3600; // default to midnight
-                    if (el.endTime) {
-                       const [endH, endM] = el.endTime.split(':').map(Number);
-                       endSeconds = endH * 3600 + endM * 60;
-                    }
-                    
-                    if (currentTotalSeconds >= startSeconds && currentTotalSeconds <= endSeconds) {
-                        const nextAllowed = lastSpokenRoutineRef.current[el.id] || 0;
-                        if (nowMs >= nextAllowed) {
-                            shouldSpeak = true;
-                        }
-                    }
-                  } else {
-                    if (el.time === currentTimeStr && now.getSeconds() < 2) {
-                      const spokenKey = `${currentDay}-${el.time}`;
-                      if (lastSpokenRoutineRef.current[el.id] !== spokenKey) {
-                        shouldSpeak = true;
-                        lastSpokenRoutineRef.current[el.id] = spokenKey;
-                      }
-                    }
-                  }
-
-                  if (shouldSpeak) {
-                    if (el.repeatInterval && parseFloat(el.repeatInterval) > 0) {
-                        const words = el.text.trim().split(/\s+/).length;
-                        const rate = parseFloat(localStorage.getItem('speechRate') || '1');
-                        const estSeconds = Math.max(1, words / (2.33 * rate));
-                        const intervalSecs = Math.round(parseFloat(el.repeatInterval) * 60);
-                        lastSpokenRoutineRef.current[el.id] = nowMs + (estSeconds * 1000) + (intervalSecs * 1000);
-                    }
-                    // force=false so routines don't abruptly interrupt each other or active timers
-                    speak(el.text, false);
-                  }
-                }
-              }
-            }
-          }
-        } catch(e) {}
+        setRoutines(JSON.parse(saved));
       }
-    }, 1000); // check every 1 second
+    };
+    loadRoutines();
 
-    return () => clearInterval(interval);
+    const setupBackground = async () => {
+      try {
+        await BackgroundMode.enable();
+        await BackgroundMode.disableWebViewOptimizations();
+      } catch (e) {
+        console.log("Background mode not available");
+      }
+    };
+    setupBackground();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('mindfulness_routines', JSON.stringify(routines));
+    initEngine(routines);
+    startEngine();
+    return () => stopEngine();
+  }, [routines]);
+
+  const saveRoutine = (routine) => {
+    if (routine.id) {
+      setRoutines(routines.map(r => r.id === routine.id ? routine : r));
+    } else {
+      setRoutines([...routines, { ...routine, id: Date.now().toString() }]);
+    }
+    setCurrentView('list');
+    setEditingRoutine(null);
+  };
+
+  const deleteRoutine = (id) => {
+    setRoutines(routines.filter(r => r.id !== id));
+  };
+
+  const toggleRoutine = (id) => {
+    setRoutines(routines.map(r => {
+      if (r.id === id) return { ...r, active: !r.active };
+      return r;
+    }));
+  };
 
   return (
-    <div className="app-container">
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        onClose={() => setIsSidebarOpen(false)} 
-        onOpenSpeechSettings={() => setIsSpeechModalOpen(true)}
-        onOpenCloudSync={() => setIsCloudSyncModalOpen(true)}
-      />
-      
-      <SpeechSettingsModal 
-        isOpen={isSpeechModalOpen} 
-        onClose={() => setIsSpeechModalOpen(false)} 
-      />
-
-      <CloudSyncModal 
-        isOpen={isCloudSyncModalOpen} 
-        onClose={() => setIsCloudSyncModalOpen(false)} 
-      />
-
-      <header className="top-nav">
-        <button className="menu-btn" onClick={() => setIsSidebarOpen(true)} style={{ position: 'relative' }}>
-          <Menu size={24} />
-          <span style={{ position: 'absolute', bottom: '-8px', left: '50%', transform: 'translateX(-50%)', fontSize: '9px', color: '#888' }}>v2</span>
-        </button>
-        <div className="tabs">
+    <div className="min-h-screen bg-zinc-950 text-white font-sans flex flex-col">
+      <header className="p-4 bg-zinc-900 border-b border-zinc-800 flex justify-between items-center">
+        <h1 className="text-xl font-bold tracking-tight text-orange-500">MindfulTTS</h1>
+        <nav className="flex space-x-2">
           <button 
-            className={`tab-btn ${activeTab === 'clock' ? 'active' : ''}`}
-            onClick={() => setActiveTab('clock')}
+            className={`px-3 py-1 rounded-md text-sm ${currentView === 'dashboard' ? 'bg-zinc-800 text-white' : 'text-zinc-400'}`}
+            onClick={() => setCurrentView('dashboard')}
           >
-            <ClockIcon size={18} /> Clock
+            Dashboard
           </button>
           <button 
-            className={`tab-btn ${activeTab === 'timer' ? 'active' : ''}`}
-            onClick={() => setActiveTab('timer')}
+            className={`px-3 py-1 rounded-md text-sm ${currentView === 'list' || currentView === 'edit' ? 'bg-zinc-800 text-white' : 'text-zinc-400'}`}
+            onClick={() => setCurrentView('list')}
           >
-            <Hourglass size={18} /> Timer
+            Routines
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'stopwatch' ? 'active' : ''}`}
-            onClick={() => setActiveTab('stopwatch')}
-          >
-            <TimerIcon size={18} /> Stopwatch
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'routines' ? 'active' : ''}`}
-            onClick={() => setActiveTab('routines')}
-          >
-            <ListRestart size={18} /> Routines
-          </button>
-        </div>
+        </nav>
       </header>
 
-      <main className="content-area">
-        <div style={{ display: activeTab === 'clock' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
-          <ClockTab />
-        </div>
-        <div style={{ display: activeTab === 'timer' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
-          <TimerTab />
-        </div>
-        <div style={{ display: activeTab === 'stopwatch' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
-          <StopwatchTab />
-        </div>
-        <div style={{ display: activeTab === 'routines' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
-          <RoutinesTab />
-        </div>
+      <main className="flex-1 overflow-y-auto p-4">
+        {currentView === 'dashboard' && <Dashboard routines={routines} />}
+        {currentView === 'list' && (
+          <RoutineList 
+            routines={routines} 
+            onEdit={(r) => { setEditingRoutine(r); setCurrentView('edit'); }}
+            onDelete={deleteRoutine}
+            onToggle={toggleRoutine}
+            onNew={() => { setEditingRoutine(null); setCurrentView('edit'); }}
+          />
+        )}
+        {currentView === 'edit' && (
+          <RoutineEditor 
+            initialRoutine={editingRoutine} 
+            onSave={saveRoutine} 
+            onCancel={() => setCurrentView('list')} 
+          />
+        )}
       </main>
     </div>
   );
